@@ -77,7 +77,10 @@
     <button id="btnVs" class="vs">Đối kháng 2 người<small>Đấu online với bạn bè</small></button>
   </div>
   <div class="best" id="menuBest"></div>
-  <div class="tips">Máy tính: giữ chuột trái rồi kéo. Điện thoại: vuốt ngón tay.<br>Chém 3 quả trở lên trong một nhát để ăn combo. Để rơi trái cây ở chế độ Cổ điển sẽ mất mạng.</div>
+  <div class="tips">Máy tính: giữ chuột trái rồi kéo. Điện thoại: vuốt ngón tay.<br>
+    Chém 3 quả trở lên trong một nhát để ăn combo. Chém liên tục không để rơi quả nào thì điểm x2, x3 🔥<br>
+    ❄ Quả băng: thời gian chậm lại · ×2 Táo vàng: nhân đôi điểm · ★ Măng cụt: mưa trái cây<br>
+    Sầu riêng khổng lồ: chém liên tục thật nhanh, đủ 12 nhát được thưởng lớn!</div>
 </div>
 
 <div id="over" class="overlay hidden">
@@ -100,7 +103,8 @@
     <div class="row" id="createRow"><button id="btnCreate">Tạo phòng mới</button></div>
     <div class="row"><input id="codeIn" placeholder="Mã phòng" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false"><button id="btnJoin" class="alt">Vào phòng</button></div>
     <button id="btnLobbyBack" class="ghost">Quay lại</button>
-    <div class="tips">Hai người nhận cùng một loạt trái cây trong 60 giây, ai nhiều điểm hơn thì thắng. Trúng bom bị trừ 10 điểm.</div>
+    <div class="tips">Hai người nhận cùng một loạt trái cây trong 60 giây, ai nhiều điểm hơn thì thắng. Trúng bom bị trừ 10 điểm.<br>
+      Combo từ 4 quả trở lên sẽ tặng đối thủ mực che màn hình hoặc ném bom sang! 🦑💣</div>
   </div>
   <div id="lobbyRoom" class="stack hidden">
     <p class="sub">Mã phòng</p>
@@ -161,6 +165,21 @@ const TYPES = [
   { id: 'xoai',  r: 37, sx: 1.25, sy: 0.86, skin: '#ffc83a', skin2: '#ec7d16', hi: '#fff0a0', rind: '#ffe28a', flesh: '#ffb627', juice: '#ffb627' },
 ];
 
+// Trái đặc biệt: 3 loại kích hoạt hiệu ứng, sầu riêng thì chém liên tục để ăn điểm
+const SPECIAL = {
+  ice:    { id: 'bang', r: 35, skin: '#a8ecff', skin2: '#3b9fd1', hi: '#ffffff', rind: '#ecfcff', flesh: '#c4f1ff', juice: '#bdf0ff', segments: true, aura: '120,220,255', label: '❄' },
+  x2:     { id: 'vang', r: 36, skin: '#ffd84a', skin2: '#c07f00', hi: '#fff8c8', rind: '#fff3c4', flesh: '#ffe680', seed: '#7a4a10', nSeeds: 5, juice: '#ffd23f', stem: true, aura: '255,210,60', label: '×2' },
+  rain:   { id: 'mcut', r: 35, skin: '#7a2f6c', skin2: '#3a0d33', hi: '#c27ab5', rind: '#c9478c', flesh: '#fbf7ef', juice: '#f1e6f5', segments: true, segLine: 'rgba(190,150,180,.7)', cap: true, aura: '255,110,220', label: '★' },
+  durian: { id: 'srieng', r: 64, skin: '#a3bd3f', skin2: '#566f14', hi: '#e2f0a0', rind: '#eef3c8', flesh: '#ffe07a', seed: '#8a5a2b', nSeeds: 4, seedR: .1, juice: '#ffe27a', spikes: true },
+};
+const POWERS = ['ice', 'x2', 'rain'];
+const POWER_INFO = {
+  ice:  { text: 'ĐÓNG BĂNG! ❄', color: '#9fe8ff', dur: 5 },
+  x2:   { text: 'NHÂN ĐÔI ĐIỂM! ×2', color: '#ffd23f', dur: 8 },
+  rain: { text: 'MƯA TRÁI CÂY! ★', color: '#ff8ae0', dur: 4 },
+};
+const DURIAN_MAX = 12;
+
 function makeSeeds(t) {
   const out = [];
   for (let i = 0; i < (t.nSeeds || 0); i++) {
@@ -186,6 +205,17 @@ function drawSkin(c, t, r, rot) {
       c.fillStyle = '#8cc63f'; c.fill();
     }
   }
+  if (t.spikes) { // gai sầu riêng
+    c.fillStyle = t.skin2;
+    for (let k = 0; k < 26; k++) {
+      const a = k * TAU / 26;
+      c.beginPath();
+      c.moveTo(Math.cos(a - .1) * r * .95, Math.sin(a - .1) * r * .95);
+      c.lineTo(Math.cos(a) * r * 1.14, Math.sin(a) * r * 1.14);
+      c.lineTo(Math.cos(a + .1) * r * .95, Math.sin(a + .1) * r * .95);
+      c.fill();
+    }
+  }
   const g = c.createRadialGradient(-r * .35, -r * .38, r * .08, 0, 0, r);
   g.addColorStop(0, t.hi); g.addColorStop(.55, t.skin); g.addColorStop(1, t.skin2);
   c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill();
@@ -208,6 +238,12 @@ function drawSkin(c, t, r, rot) {
   } else if (t.kiwi) {
     c.fillStyle = 'rgba(50,30,10,.35)';
     for (let k = 0; k < 16; k++) { const a = k * 2.4, d = (k % 5 + 1) / 6 * r; ellipse(c, Math.cos(a) * d, Math.sin(a) * d, r * .04, r * .04); c.fill(); }
+  } else if (t.spikes) {
+    c.fillStyle = 'rgba(70,95,15,.55)';
+    for (let k = 0; k < 40; k++) {
+      const a = k * 2.4, d = Math.sqrt((k + .5) / 40) * r, x = Math.cos(a) * d, y = Math.sin(a) * d;
+      c.beginPath(); c.moveTo(x - r * .05, y + r * .04); c.lineTo(x, y - r * .07); c.lineTo(x + r * .05, y + r * .04); c.fill();
+    }
   } else if (t.segments) {
     c.fillStyle = 'rgba(0,0,0,.08)';
     for (let k = 0; k < 18; k++) { const a = k * 2.1, d = (k % 6 + 1) / 7 * r; ellipse(c, Math.cos(a) * d, Math.sin(a) * d, r * .035, r * .035); c.fill(); }
@@ -221,6 +257,16 @@ function drawSkin(c, t, r, rot) {
   }
   if (t.id === 'xoai') { c.fillStyle = '#6a8f22'; ellipse(c, -r * .82, -r * .2, r * .1, r * .07); c.fill(); }
   if (t.id === 'cam') { c.fillStyle = '#5f8f2a'; ellipse(c, 0, -r * .9, r * .1, r * .06); c.fill(); }
+  if (t.cap) { // đài lá măng cụt
+    c.fillStyle = '#5e8f2c';
+    for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + (k - 2) * .45; ellipse(c, Math.cos(a) * r * .72, Math.sin(a) * r * .72, r * .2, r * .11, a); c.fill(); }
+    c.strokeStyle = '#4a6a20'; c.lineWidth = r * .09; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(0, -r * .85); c.lineTo(0, -r * 1.12); c.stroke();
+  }
+  if (t.spikes) {
+    c.strokeStyle = '#6b4a22'; c.lineWidth = r * .12; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(0, -r * .95); c.lineTo(r * .05, -r * 1.28); c.stroke();
+  }
 
   c.fillStyle = 'rgba(255,255,255,.28)';
   ellipse(c, -r * .38, -r * .42, r * .26, r * .14, -.7); c.fill();
@@ -232,7 +278,7 @@ function drawFace(c, t, r, seeds) {
   c.fillStyle = t.rind; ellipse(c, 0, 0, rx, ry); c.fill();
   c.fillStyle = t.flesh; ellipse(c, 0, 0, rx * .86, ry * .82); c.fill();
   if (t.segments) {
-    c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = Math.max(1, r * .035);
+    c.strokeStyle = t.segLine || 'rgba(255,255,255,.6)'; c.lineWidth = Math.max(1, r * .035);
     for (let k = 0; k < 10; k++) {
       const a = k * TAU / 10;
       c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * rx * .84, Math.sin(a) * ry * .8); c.stroke();
@@ -246,7 +292,7 @@ function drawFace(c, t, r, seeds) {
   }
   if (seeds && seeds.length) {
     c.fillStyle = t.seed;
-    const sr = t.id === 'tlong' ? r * .022 : r * .045;
+    const sr = r * (t.seedR || (t.id === 'tlong' ? .022 : .045));
     for (const s of seeds) { ellipse(c, s.x * rx * .68, s.y * ry * .62, sr * 1.3, sr * .8); c.fill(); }
   }
   c.fillStyle = 'rgba(255,255,255,.18)'; ellipse(c, -rx * .3, -ry * .3, rx * .3, ry * .22); c.fill();
@@ -353,6 +399,14 @@ const sfx = {
   boom() { noise(1.1, 'lowpass', 900, 60, .9); tone(90, 28, .9, .7); },
   miss() { tone(330, 140, .35, .18, 'triangle'); },
   combo(n) { const notes = [523, 659, 784, 1047, 1319]; for (let i = 0; i < Math.min(n, 5); i++) tone(notes[i], notes[i] * 1.01, .18, .14, 'triangle', i * .07); },
+  power(k) {
+    const notes = k === 'ice' ? [1568, 2093, 2637] : k === 'x2' ? [523, 784, 1047, 1568] : [784, 988, 1175, 1319, 1568];
+    notes.forEach((f, i) => tone(f, f, .22, .12, 'triangle', i * .06));
+  },
+  streak() { [659, 880, 1175].forEach((f, i) => tone(f, f * 1.02, .15, .1, 'square', i * .05)); },
+  thock() { tone(240, 120, .08, .25, 'square'); noise(.08, 'lowpass', 1500, 400, .25); },
+  tick() { tone(1400, 1400, .04, .07, 'square'); },
+  ink() { noise(.35, 'lowpass', 700, 150, .45); tone(160, 70, .3, .2); },
 };
 
 // ---------- Trạng thái ----------
@@ -360,6 +414,8 @@ let state = 'menu', mode = 'classic', paused = false;
 let score = 0, lives = 3, timeLeft = 60, elapsed = 0, nextWave = 0, dieT = 0, overReason = '', menuSpawnT = 0;
 let fruits = [], pieces = [], parts = [], splats = [], pops = [], queue = [], trail = [];
 let flash = 0, shake = 0, down = false;
+let streak = 0, slowT = 0, nextDurian = 18, rainT = 0, lastTick = -1, atkT = 0, inks = [];
+const fx = { ice: 0, x2: 0, rain: 0 }; // thời gian còn lại (giây) của từng hiệu ứng
 const combo = { n: 0, t: 0, x: 0, y: 0 };
 const TRAIL_MS = 110;
 
@@ -385,20 +441,30 @@ function mulberry32(a) {
 }
 
 // Bốc thăm trước mọi thông số của một lần ném (tỉ lệ theo màn hình), d = thời điểm ném tính theo giây của trận
-function makeThrow(bomb, d) {
-  return { d, bomb, type: rng() * TYPES.length | 0, xf: rng(), hf: rng(), tf: rng() };
+// kind: 'fruit' | 'bomb' | 'ice' | 'x2' | 'rain' | 'durian'
+function makeThrow(kind, d, r = rng) {
+  return { d, kind, type: r() * TYPES.length | 0, xf: r(), hf: r(), tf: r() };
 }
 
 function spawnOne(o) {
-  const x = W * (.12 + .76 * o.xf), y = H + 60 * S;
-  const h = (.45 + .37 * o.hf) * H, vy = -Math.sqrt(2 * G * h);
-  const T = 2 * Math.sqrt(2 * h / G), vx = (W * (.2 + .6 * o.tf) - x) / T;
-  const t = o.bomb ? null : TYPES[o.type];
-  fruits.push({ t, bomb: o.bomb, x, y, vx, vy, r: (o.bomb ? 34 : t.r) * S, rot: rand(0, TAU), vr: rand(-3, 3), seeds: t ? makeSeeds(t) : null, dead: false });
+  const k = o.kind, big = k === 'durian';
+  const x = W * (big ? .3 + .4 * o.xf : .12 + .76 * o.xf), y = H + 60 * S;
+  const h = (big ? .55 + .15 * o.hf : .45 + .37 * o.hf) * H, vy = -Math.sqrt(2 * G * h);
+  const T = 2 * Math.sqrt(2 * h / G), vx = (W * (big ? .4 + .2 * o.tf : .2 + .6 * o.tf) - x) / T;
+  const t = k === 'bomb' ? null : k === 'fruit' ? TYPES[o.type] : SPECIAL[k];
+  const f = { t, kind: k, bomb: k === 'bomb', x, y, vx, vy, r: (t ? t.r : 34) * S, rot: rand(0, TAU), vr: big ? rand(-1, 1) : rand(-3, 3),
+    seeds: t ? makeSeeds(t) : null, dead: false, hits: 0 };
+  fruits.push(f);
   sfx.toss();
+  return f;
 }
 
 function spawnWave(at) {
+  if (at >= nextDurian) { // thỉnh thoảng một quả sầu riêng bay lên một mình
+    nextDurian += 24;
+    queue.push(makeThrow('durian', at));
+    return;
+  }
   const arcade = mode !== 'classic', lvl = Math.min(1, at / (arcade ? 50 : 120));
   const n = 1 + Math.floor(rng() * (1 + (arcade ? 4 : 3) * lvl + (arcade ? 1.5 : 0)));
   const bombP = at < 4 ? 0 : arcade ? .1 + .1 * lvl : .05 + .17 * lvl;
@@ -408,7 +474,9 @@ function spawnWave(at) {
     let bomb = rng() < bombP && bombs < 2 && (i > 0 || n === 1);
     if (n === 1 && bomb && rng() < .5) bomb = false;
     if (bomb) bombs++;
-    queue.push(makeThrow(bomb, at + (salvo ? i * .16 : rng() * .1)));
+    let kind = bomb ? 'bomb' : 'fruit';
+    if (!bomb && at > 6 && rng() < .07) kind = POWERS[rng() * POWERS.length | 0];
+    queue.push(makeThrow(kind, at + (salvo ? i * .16 : rng() * .1)));
   }
 }
 
@@ -418,7 +486,9 @@ function startGame(m) {
   audio();
   mode = m; state = 'play'; paused = false;
   score = 0; lives = 3; timeLeft = 60; elapsed = 0; nextWave = .7;
-  fruits = []; queue = []; combo.n = 0;
+  fruits = []; queue = []; inks = []; combo.n = 0;
+  streak = 0; slowT = 0; nextDurian = 18; rainT = 0; lastTick = -1; atkT = 0;
+  fx.ice = fx.x2 = fx.rain = 0;
   if (m !== 'vs') rng = Math.random;
   for (const id of ['menu', 'over', 'pause', 'lobby', 'vsOver']) $(id).classList.add('hidden');
   $('pauseBtn').classList.toggle('hidden', m === 'vs');
@@ -429,6 +499,7 @@ function endGame(reason) {
   state = 'dying'; overReason = reason;
   dieT = reason === 'bomb' ? 1.5 : 1;
   queue = [];
+  fx.ice = fx.x2 = fx.rain = 0;
   $('pauseBtn').classList.add('hidden');
 }
 
@@ -471,10 +542,74 @@ function addSplat(x, y, r, color) {
   if (splats.length > 40) splats.shift();
 }
 
+const mult = () => (streak >= 30 ? 3 : streak >= 12 ? 2 : 1) * (fx.x2 > 0 ? 2 : 1);
+
+function addScore(base, x, y, quiet) {
+  if (state !== 'play') return 0;
+  const p = base * mult();
+  score += p;
+  if (p > 1 && !quiet) pop('+' + p, x, y - 24 * S, fx.x2 > 0 ? '#ffd23f' : '#fff', 22);
+  return p;
+}
+
+function breakStreak() {
+  if (streak >= 12 && state === 'play') pop('Mất chuỗi!', W / 2, H * .3, '#ff9a8a', 28);
+  streak = 0;
+}
+
 function cut(f, ang) {
   f.dead = true;
-  const playing = state === 'play';
   if (f.bomb) { explode(f); return; }
+  splitFruit(f, ang);
+  if (state !== 'play') return;
+  streak++;
+  if (streak === 12 || streak === 30) {
+    pop(`Chuỗi ${streak} quả · điểm x${streak === 30 ? 3 : 2} 🔥`, W / 2, H * .22, '#ffb347', 30);
+    sfx.streak();
+  }
+  addScore(1, f.x, f.y);
+  combo.n++; combo.t = .28; combo.x = f.x; combo.y = f.y;
+  if (POWER_INFO[f.kind]) {
+    const p = POWER_INFO[f.kind];
+    fx[f.kind] = p.dur;
+    pop(p.text, W / 2, H * .3, p.color, 40);
+    sfx.power(f.kind);
+  }
+}
+
+// Sầu riêng: nhát đầu làm nó đứng lại giữa không trung, mỗi lần lưỡi dao lướt qua là một điểm
+function durianHit(f, time) {
+  f.lastHit = time; f.hits++; f.squash = 1;
+  if (!f.held) { f.held = true; f.hold = 1.8; }
+  for (let i = 0; i < 6; i++) {
+    const a = rand(0, TAU), sp = rand(80, 260) * S;
+    parts.push({ x: f.x + Math.cos(a) * f.r * .8, y: f.y + Math.sin(a) * f.r * .8, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: rand(2, 5) * S, color: f.t.juice, life: .5, max: .5, g: 1 });
+  }
+  shake = Math.max(shake, 5 * S);
+  sfx.thock();
+  addScore(1, f.x + rand(-.5, .5) * f.r, f.y - f.r * .6);
+  if (f.hits >= DURIAN_MAX) burstDurian(f);
+}
+
+function burstDurian(f) {
+  if (f.dead) return;
+  f.dead = true;
+  splitFruit(f, rand(0, TAU));
+  addSplat(f.x, f.y, f.r * 1.4, f.t.juice);
+  const p = addScore(f.hits >= DURIAN_MAX ? 15 : f.hits, 0, 0, true);
+  if (p) { pop(`Sầu riêng! +${p}`, f.x, f.y - f.r, '#ffe27a', 34); sfx.combo(4); }
+}
+
+function addInk(n) {
+  for (let i = 0; i < n; i++) {
+    const r = rand(55, 100) * S, blobs = [];
+    for (let j = 0; j < 7; j++) { const a = rand(0, TAU), d = rand(0, r * .6); blobs.push({ x: Math.cos(a) * d, y: Math.sin(a) * d, r: rand(r * .3, r * .6) }); }
+    inks.push({ x: rand(.15, .85) * W, y: rand(.25, .8) * H, r, blobs, life: rand(3.5, 4.5) });
+  }
+  sfx.ink();
+}
+
+function splitFruit(f, ang) {
   const t = f.t, nx = -Math.sin(ang), ny = Math.cos(ang), k = 90 * S, tx = Math.cos(ang) * 40 * S, ty = Math.sin(ang) * 40 * S;
   for (const side of [-1, 1]) {
     pieces.push({
@@ -489,10 +624,6 @@ function cut(f, ang) {
   }
   addSplat(f.x, f.y, f.r * 1.1, t.juice);
   sfx.slice();
-  if (playing) {
-    score++;
-    combo.n++; combo.t = .28; combo.x = f.x; combo.y = f.y;
-  }
 }
 
 function explode(b) {
@@ -505,6 +636,7 @@ function explode(b) {
   }
   addSplat(b.x, b.y, b.r * 1.8, 'rgba(10,10,10,.9)');
   if (state !== 'play') return;
+  breakStreak();
   if (mode === 'classic') { endGame('bomb'); }
   else {
     score = Math.max(0, score - 10);
@@ -537,8 +669,12 @@ function addPoint(x, y, time) {
   if (len / dt > 1.1 && time - lastSwoosh > 170) { lastSwoosh = time; sfx.swoosh(); }
   const ang = Math.atan2(dy, dx);
   for (const f of fruits) {
-    if (!f.dead && segDist(f.x, f.y, a, p) < f.r * ((f.t && f.t.sx) || 1)) cut(f, ang);
+    if (f.dead || segDist(f.x, f.y, a, p) >= f.r * ((f.t && f.t.sx) || 1)) continue;
+    if (f.kind !== 'durian') cut(f, ang);
+    // chỉ tính một nhát khi lưỡi dao đi từ ngoài vào, để giữ chuột trong quả không ăn điểm liên tục
+    else if (time - (f.lastHit || 0) > 45 && Math.hypot(a.x - f.x, a.y - f.y) > f.r) durianHit(f, time);
   }
+  for (const k of inks) if (segDist(k.x, k.y, a, p) < k.r * .8) k.life = Math.min(k.life, .45); // vuốt qua để lau mực
 }
 
 cv.addEventListener('pointerdown', e => {
@@ -701,6 +837,16 @@ function onNet(m) {
       updateVsOverStatus();
       if (net.host && net.wantRematch) sendStart();
       return;
+    case 'atk':
+      if (!fromOpp || m.round !== net.played || state !== 'play' || now < vsStart) return;
+      if (m.kind === 'ink') {
+        addInk(5);
+        pop(`${name} tặng bạn mực! Vuốt để lau 🦑`, W / 2, H * .4, '#ff9a8a', 24);
+      } else {
+        for (let i = 0; i < 2; i++) spawnOne(makeThrow('bomb', 0, Math.random));
+        pop(`${name} ném 2 quả bom sang! 💣`, W / 2, H * .4, '#ff9a8a', 24);
+      }
+      return;
     case 'leave':
       if (!fromOpp || net.oppLeft) return;
       net.oppLeft = true;
@@ -708,6 +854,13 @@ function onNet(m) {
       if (net.myFinal !== null && !net.resultShown) finishVs(); else updateVsOverStatus();
       return;
   }
+}
+
+// Combo từ 4 quả: lần lượt tặng đối thủ mực che màn hình hoặc 2 quả bom
+function sendAttack() {
+  const kind = (net.atkFlip = !net.atkFlip) ? 'ink' : 'bombs';
+  send('atk', { kind, round: net.played }, 1);
+  pop(kind === 'ink' ? `Đã tặng mực cho ${net.oppName}! 🦑` : `Đã ném 2 quả bom sang ${net.oppName}! 💣`, W / 2, H * .4, '#6fe3ff', 24);
 }
 
 function sendStart() {
@@ -781,6 +934,7 @@ function drawVsHud(now) {
   const m = 16, top = 14, lost = net.oppLeft || now - net.lastSeen > 7000;
   text(myName, m + 2, top, Math.round(15 * S), '#fff');
   text(String(score), m, top + 20 * S, Math.round(44 * S), '#ffd23f');
+  drawFxHud(m + 2, top + 70 * S);
   text(lost ? `${net.oppName} (mất kết nối)` : net.oppName, W - m - 2, top, Math.round(15 * S), lost ? '#ff9a8a' : '#fff', 'right');
   text(String(net.oppScore), W - m, top + 20 * S, Math.round(44 * S), '#6fe3ff', 'right');
   const sec = Math.ceil(timeLeft);
@@ -913,6 +1067,9 @@ if (invitedCode) openLobby(invitedCode.toUpperCase().slice(0, 6));
 
 // ---------- Vòng lặp ----------
 function update(dt, now) {
+  slowT = Math.max(0, slowT - dt);
+  for (const k of POWERS) fx[k] = Math.max(0, fx[k] - dt);
+  const gdt = dt * (fx.ice > 0 ? .4 : slowT > 0 ? .45 : 1); // thời gian trong game (chậm lại khi đóng băng / combo lớn)
   if (state === 'play') {
     if (mode === 'vs') {
       // Đối kháng tính giờ theo đồng hồ thật để 2 máy kết thúc cùng lúc
@@ -920,9 +1077,15 @@ function update(dt, now) {
       timeLeft = Math.max(0, 60 - elapsed);
       netTick(now);
     } else {
-      elapsed += dt;
-      if (mode === 'arcade') timeLeft = Math.max(0, timeLeft - dt);
+      elapsed += gdt;
+      if (mode === 'arcade') timeLeft = Math.max(0, timeLeft - gdt);
     }
+    if (fx.rain > 0) {
+      rainT -= dt;
+      if (rainT <= 0) { rainT = .1; spawnOne(makeThrow('fruit', 0, Math.random)).bonus = true; }
+    }
+    const sec = Math.ceil(timeLeft);
+    if (mode !== 'classic' && sec <= 5 && sec > 0 && sec !== lastTick && (mode !== 'vs' || now >= vsStart)) { lastTick = sec; sfx.tick(); }
     while (elapsed >= nextWave) { spawnWave(nextWave); nextWave += waveGap(nextWave); }
     for (let i = 0; i < queue.length;) {
       const q = queue[i];
@@ -933,7 +1096,7 @@ function update(dt, now) {
     if (mode !== 'classic' && timeLeft <= 0) endGame('time');
   } else if (state === 'menu' || state === 'over') {
     menuSpawnT -= dt;
-    if (menuSpawnT <= 0 && fruits.length < 4) { spawnOne(makeThrow(false, 0)); menuSpawnT = rand(.9, 1.6); }
+    if (menuSpawnT <= 0 && fruits.length < 4) { spawnOne(makeThrow('fruit', 0, Math.random)); menuSpawnT = rand(.9, 1.6); }
   } else if (state === 'dying') {
     dieT -= dt;
     if (dieT <= 0) showOver();
@@ -941,38 +1104,52 @@ function update(dt, now) {
 
   for (let i = fruits.length - 1; i >= 0; i--) {
     const f = fruits[i];
-    f.vy += G * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.rot += f.vr * dt;
+    if (f.held && !f.dead) {
+      f.hold -= dt;
+      f.squash = Math.max(0, f.squash - dt * 6);
+      if (f.hold <= 0) burstDurian(f);
+      continue;
+    }
+    f.vy += G * gdt; f.x += f.vx * gdt; f.y += f.vy * gdt; f.rot += f.vr * gdt;
     if (f.bomb && !f.dead && Math.random() < .6) {
       const c = Math.cos(f.rot), s = Math.sin(f.rot), lx = f.r * .42, ly = -f.r * 1.42;
       parts.push({ x: f.x + lx * c - ly * s, y: f.y + lx * s + ly * c, vx: rand(-60, 60) * S, vy: rand(-120, -20) * S,
         r: rand(1.5, 3) * S, color: pick(['#ffe36b', '#ffb21e', '#fff']), life: rand(.15, .35), max: .35, g: .2 });
     }
     if (f.dead || (f.vy > 0 && f.y > H + f.r * 2.5)) {
-      if (!f.dead && !f.bomb && state === 'play' && mode === 'classic') loseLife(f.x);
+      if (!f.dead && f.kind === 'fruit' && !f.bonus && state === 'play') {
+        breakStreak();
+        if (mode === 'classic') loseLife(f.x);
+      }
       fruits.splice(i, 1);
     }
   }
   for (let i = pieces.length - 1; i >= 0; i--) {
     const p = pieces[i];
-    p.vy += G * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    p.vy += G * gdt; p.x += p.vx * gdt; p.y += p.vy * gdt; p.rot += p.vr * gdt;
     if (p.y > H + p.r * 3) pieces.splice(i, 1);
   }
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i];
-    p.life -= dt; p.vy += G * p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .985;
+    p.life -= gdt; p.vy += G * p.g * gdt; p.x += p.vx * gdt; p.y += p.vy * gdt; p.vx *= .985;
     if (p.life <= 0) parts.splice(i, 1);
   }
   for (let i = splats.length - 1; i >= 0; i--) if ((splats[i].life -= dt) <= 0) splats.splice(i, 1);
+  for (let i = inks.length - 1; i >= 0; i--) if ((inks[i].life -= dt) <= 0) inks.splice(i, 1);
   for (let i = pops.length - 1; i >= 0; i--) { const p = pops[i]; p.life -= dt; p.y -= 40 * S * dt; if (p.life <= 0) pops.splice(i, 1); }
 
   if (combo.n > 0) {
     combo.t -= dt;
     if (combo.t <= 0) {
       if (combo.n >= 3 && state === 'play') {
-        score += combo.n;
-        pop(`Combo ${combo.n} quả! +${combo.n}`, Math.max(120 * S, Math.min(W - 120 * S, combo.x)), combo.y - 30 * S, '#7dff8a', 34);
+        const p = addScore(combo.n, 0, 0, true);
+        pop(`Combo ${combo.n} quả! +${p}`, Math.max(120 * S, Math.min(W - 120 * S, combo.x)), combo.y - 30 * S, '#7dff8a', 34);
         sfx.combo(combo.n);
-        if (mode === 'vs') { net.comboOut = combo.n; net.sentT = 0; }
+        if (combo.n >= 4) slowT = .35;
+        if (mode === 'vs') {
+          net.comboOut = combo.n; net.sentT = 0;
+          if (combo.n >= 4 && now - atkT > 3000) { atkT = now; sendAttack(); }
+        }
       }
       combo.n = 0;
     }
@@ -980,6 +1157,26 @@ function update(dt, now) {
   while (trail.length && now - trail[0].t > TRAIL_MS) trail.shift();
   flash = Math.max(0, flash - dt * 1.6);
   shake = Math.max(0, shake - dt * 40);
+}
+
+function edgeGlow(rgb, a) {
+  const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75);
+  g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(1, `rgba(${rgb},${a})`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+
+// Chuỗi lửa dưới điểm số, hiệu ứng đang chạy ở góc dưới trái
+function drawFxHud(x, y) {
+  const m = mult();
+  if (streak >= 3) text(`🔥 ${streak}${m > 1 ? '  x' + m : ''}`, x, y, Math.round(18 * S), m > 1 ? '#ffb347' : '#fff');
+  let px = 16;
+  const size = Math.round(20 * S);
+  for (const k of POWERS) {
+    if (fx[k] <= 0) continue;
+    const s = `${SPECIAL[k].label} ${Math.ceil(fx[k])}s`;
+    text(s, px, H - 44 * S, size, POWER_INFO[k].color);
+    px += ctx.measureText(s).width + 18;
+  }
 }
 
 function heart(x, y, s, filled) {
@@ -1025,23 +1222,51 @@ function render(now) {
   for (const f of fruits) {
     if (f.bomb) { drawBomb(f, now); continue; }
     ctx.save(); ctx.translate(f.x, f.y);
-    ctx.fillStyle = 'rgba(0,0,0,.18)'; ellipse(ctx, f.r * .15, f.r * .2, f.r, f.r * .95); ctx.fill();
+    if (f.held) { // sầu riêng đang bị chém: rung và nảy theo từng nhát
+      const j = 3 * S, s = 1 + f.squash * .1;
+      ctx.translate(rand(-j, j), rand(-j, j)); ctx.scale(s, 2 - s);
+    }
+    if (f.t.aura) {
+      const g = ctx.createRadialGradient(0, 0, f.r * .6, 0, 0, f.r * 1.8);
+      g.addColorStop(0, `rgba(${f.t.aura},${.55 + .25 * Math.sin(now / 120)})`); g.addColorStop(1, `rgba(${f.t.aura},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, f.r * 1.8, 0, TAU); ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,.18)'; ellipse(ctx, f.r * .15, f.r * .2, f.r, f.r * .95); ctx.fill();
+    }
     drawSkin(ctx, f.t, f.r, f.rot);
+    if (f.t.label) {
+      ctx.font = `900 ${Math.round(f.r * .8)}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = f.r * .14; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(f.t.label, 0, 2);
+      ctx.fillStyle = '#fff'; ctx.fillText(f.t.label, 0, 2);
+    }
+    if (f.held) text(`${f.hits}/${DURIAN_MAX}`, 0, -f.r * 1.75, Math.round(26 * S), '#ffe27a', 'center');
     ctx.restore();
   }
   for (const p of parts) {
     ctx.globalAlpha = Math.max(0, p.life / p.max);
     ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
   }
+  for (const k of inks) {
+    ctx.globalAlpha = Math.min(1, k.life / .45) * .94;
+    ctx.fillStyle = '#140f1f';
+    for (const b of k.blobs) { ctx.beginPath(); ctx.arc(k.x + b.x, k.y + b.y, b.r, 0, TAU); ctx.fill(); }
+  }
   ctx.globalAlpha = 1;
 
+  if (fx.ice > 0) edgeGlow('170,230,255', .6 * Math.min(1, fx.ice * 2));
+  if (fx.x2 > 0) edgeGlow('255,200,40', .3 * Math.min(1, fx.x2 * 2));
+  if (fx.rain > 0) edgeGlow('255,110,220', .3 * Math.min(1, fx.rain * 2));
+
+  // Lưỡi dao đổi màu theo chuỗi / hiệu ứng
+  const glow = fx.ice > 0 ? 'rgba(150,230,255,.6)' : streak >= 30 ? 'rgba(255,80,220,.6)' : streak >= 12 ? 'rgba(255,150,40,.65)' : 'rgba(150,225,255,.45)';
+  const glowW = streak >= 12 ? 20 : 15;
   if (trail.length > 1) {
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (let pass = 0; pass < 2; pass++) {
       for (let i = 1; i < trail.length; i++) {
         const k = i / (trail.length - 1), age = Math.min(1, Math.max(0, 1 - (now - trail[i].t) / TRAIL_MS));
-        ctx.lineWidth = (pass ? 5 : 15) * S * k * age + .5;
-        ctx.strokeStyle = pass ? '#ffffff' : 'rgba(150,225,255,.45)';
+        ctx.lineWidth = (pass ? 5 : glowW) * S * k * age + .5;
+        ctx.strokeStyle = pass ? '#ffffff' : glow;
         ctx.beginPath(); ctx.moveTo(trail[i - 1].x, trail[i - 1].y); ctx.lineTo(trail[i].x, trail[i].y); ctx.stroke();
       }
     }
@@ -1059,6 +1284,7 @@ function render(now) {
     const m = 16, top = 14;
     text(String(score), m, top, Math.round(44 * S), '#ffd23f');
     text(`Kỷ lục: ${Math.max(getBest(mode), score)}`, m + 2, top + 50 * S, Math.round(16 * S), '#fff');
+    drawFxHud(m + 2, top + 72 * S);
     if (mode === 'classic') {
       const hs = 30 * S;
       for (let i = 0; i < 3; i++) heart(W - m - hs * .55 - i * hs * 1.2, top + 4, hs, i < lives);
