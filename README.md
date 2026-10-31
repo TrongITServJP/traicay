@@ -9,18 +9,18 @@ Game chém trái cây chạy ngay trên trình duyệt — máy tính và điệ
 - Chém 3 quả trở lên trong một nhát để ăn **combo**.
 - Tránh **bom** 💣.
 - **Chuỗi lửa 🔥:** chém liên tục không để rơi quả nào — từ 12 quả điểm x2, từ 30 quả điểm x3.
-- **Nhân vật:** một bé người đứng dưới đáy màn hình, nhảy vút lên vung vũ khí theo từng nhát chém của bạn (tắt được trong Tủ đồ).
-- **Mana & tuyệt chiêu ⚡:** chém trái cây để nạp mana (trúng bom bị trừ). Đầy thanh thì bấm nút ⚡ hoặc phím **Space** để tung tuyệt chiêu đã chọn.
+- **Nhân vật:** đứng dưới đáy màn hình; khi bạn vuốt, nhân vật bay bám theo đầu lưỡi dao và vung vũ khí theo từng nhát chém, thả tay thì rơi về đất (tắt được trong Tủ đồ).
+- **Mana & tuyệt chiêu ⚡:** chém trái cây để nạp mana (trúng bom bị trừ). Đầy thanh thì bấm nút ⚡ hoặc phím **Space** để tung tuyệt chiêu đã chọn — mỗi chiêu kéo dài 5 giây.
 
 ### Tuyệt chiêu
 | Chiêu | Tác dụng |
 |---|---|
-| 🔥 Hỏa Luân | Vòng lửa lan khắp màn hình, đốt mọi trái cây và thiêu luôn bom |
-| 🌪️ Cuồng Phong | Lốc xoáy quét ngang, hút trái cây vào chém, thổi bay bom |
-| ⚔️ Vạn Kiếm | Mưa kiếm từ trời bám theo từng quả mà chém |
-| ❄️ Băng Phong | Đóng băng mọi thứ giữa không trung 4 giây, bom băng vô hại |
-| ☃️ Bão Tuyết | Thời gian chậm hẳn 5 giây, bom hóa thành cầu tuyết |
-| 🐉 Chưởng Rồng | Rồng vàng uốn lượn khắp màn hình, chém sạch trái cây trên đường bay |
+| 🔥 Hỏa Luân | 3 bánh xe lửa lăn khắp màn hình, đốt trái cây và thiêu luôn bom |
+| 🌪️ Cuồng Phong | Vòi rồng quét qua lại, hút trái cây vào chém, thổi bay bom |
+| ⚔️ Vạn Kiếm | Pháp trận trên cao bắn mưa kiếm bám theo từng quả |
+| ❄️ Băng Phong | Đóng băng mọi thứ trên màn hình, bom băng vô hại |
+| ☃️ Bão Tuyết | Bão tuyết: thời gian chậm hẳn, bom hóa thành cầu tuyết |
+| 🐉 Chưởng Rồng | Rồng vàng lượn khắp màn hình, phun lửa chém sạch trái cây |
 
 ### Trái đặc biệt
 | Trái | Hiệu ứng |
@@ -42,13 +42,15 @@ Hết mỗi ván Cổ điển / 60 giây, kỷ lục của bạn tự gửi lên
 
 ### Tủ đồ 🎒
 Mở khóa bằng thành tích, chọn trong menu **🎒 Tủ đồ**:
-- **Nhân vật (6):** Nông dân nón lá, Ninja (chém 100 quả), Đầu bếp (combo 5), Võ sĩ (thắng 2 trận đối kháng), Phi hành gia (150 điểm/ván), Mèo con (cấp 6 Cổ điển).
-- **Vũ khí (6):** Dao bếp, Dao rựa (combo 4), Kiếm dài (chém 300 quả), Rìu (cấp 4 Cổ điển), Cái muôi (thắng 1 trận đối kháng), Kiếm ánh sáng (chuỗi 40).
+- **Nhân vật (6):** Chàng phiêu lưu, Cô phiêu lưu (chém 100 quả), Anh chàng (combo 5), Cô nàng (thắng 2 trận đối kháng), Rô-bốt (150 điểm/ván), Thây ma (cấp 6 Cổ điển).
+- **Vũ khí (6):** Dao bếp, Rìu (combo 4), Búa (cấp 4 Cổ điển), Chảo (thắng 1 trận đối kháng), Kiếm dài (chém 300 quả), Kiếm ánh sáng (chuỗi 40).
 - **Tuyệt chiêu (6):** Hỏa Luân, Cuồng Phong có sẵn; Vạn Kiếm (chém 150 quả), Băng Phong (3 quả băng), Bão Tuyết (cấp 3 Cổ điển), Chưởng Rồng (200 điểm/ván).
 - **Vệt chém (9):** Cổ điển, Lá chuối (chém 200 quả), Lửa (100 điểm/ván), Băng giá (5 quả băng), Sấm sét (combo 6), Sầu riêng vàng (3 sầu riêng), Hoa đào (250 điểm/ván), Cầu vồng (chuỗi 50), Bóng đêm (thắng 5 trận đối kháng).
 
 ## Kỹ thuật
-Game là một file `index.html` duy nhất (HTML5 Canvas + Web Audio), không cần build, chạy trên GitHub Pages.
+Game là một file `index.html` (HTML5 Canvas + Web Audio) cùng thư mục `assets/`, không cần build, chạy trên GitHub Pages.
+
+- **Hình ảnh:** nhân vật, vũ khí và texture hiệu ứng của [Kenney](https://kenney.nl) — giấy phép CC0, xem [`assets/README.md`](assets/README.md).
 
 - **Đối kháng:** gửi tin nhắn qua MQTT broker công khai (`broker.emqx.io`, dự phòng `broker.hivemq.com`) bằng [mqtt.js](https://github.com/mqttjs/MQTT.js). Chủ phòng giữ danh sách người chơi; mọi máy dùng chung một seed để ra cùng loạt trái cây; qua mạng chỉ gửi điểm số và nét chém (tọa độ theo tỉ lệ màn hình).
 - **Bảng xếp hạng:** API nhỏ trong thư mục [`server/`](server/), chạy trên Vercel tại `https://traicay-api.vercel.app/api/lb`, lưu một file JSON trong Vercel Blob (kho private). Mỗi lần ghi đều đọc bản mới nhất và ghi có điều kiện theo ETag, nên nhiều người gửi điểm cùng lúc không bị mất điểm.
