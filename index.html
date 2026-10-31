@@ -63,6 +63,16 @@
   .vsScores b { font-size: clamp(48px, 13vw, 84px); line-height: 1; color: #ffd23f; text-shadow: 0 4px 0 #7a3b00; }
   .vsScores > div:last-child b { color: #6fe3ff; text-shadow: 0 4px 0 #13648c; }
   .vsMark { font-weight: 900; font-size: 22px; opacity: .7; }
+  .overlay.scroll { justify-content: flex-start; overflow-y: auto; touch-action: pan-y; padding-top: calc(24px + env(safe-area-inset-top, 0px)); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; width: min(720px, 100%); }
+  button.skin { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 12px; border-radius: 16px;
+    font-size: 16px; color: #fff; background: rgba(0,0,0,.4); box-shadow: inset 0 0 0 2px rgba(255,255,255,.18); }
+  button.skin:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px rgba(255,255,255,.3); }
+  button.skin.on { box-shadow: inset 0 0 0 3px #ffd23f, 0 0 18px rgba(255,210,63,.35); }
+  button.skin small { font-size: 12.5px; font-weight: 600; opacity: .85; line-height: 1.35; }
+  button.skin.on small { color: #ffd23f; opacity: 1; }
+  .swatch { display: block; width: 88%; height: 14px; border-radius: 999px; transform: skewX(-25deg); }
+  button.skin.locked .swatch { filter: grayscale(1) brightness(.55); }
 </style>
 </head>
 <body>
@@ -76,6 +86,7 @@
     <button id="btnArcade" class="alt">Tốc độ 60 giây<small>Chém càng nhiều càng tốt</small></button>
     <button id="btnVs" class="vs">Đối kháng 2 người<small>Đấu online với bạn bè</small></button>
   </div>
+  <button id="btnSkins" class="ghost">🗡 Lưỡi dao</button>
   <div class="best" id="menuBest"></div>
   <div class="tips">Máy tính: giữ chuột trái rồi kéo. Điện thoại: vuốt ngón tay.<br>
     Chém 3 quả trở lên trong một nhát để ăn combo. Chém liên tục không để rơi quả nào thì điểm x2, x3 🔥<br>
@@ -95,6 +106,13 @@
   </div>
 </div>
 
+<div id="skins" class="overlay scroll hidden">
+  <h2>Lưỡi dao</h2>
+  <p class="sub" id="skinCount"></p>
+  <div id="skinGrid" class="grid"></div>
+  <button id="btnSkinBack" class="ghost">Quay lại</button>
+</div>
+
 <div id="lobby" class="overlay hidden">
   <h2>Đối kháng 2 người</h2>
   <div id="lobbyHome" class="stack">
@@ -104,7 +122,8 @@
     <div class="row"><input id="codeIn" placeholder="Mã phòng" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false"><button id="btnJoin" class="alt">Vào phòng</button></div>
     <button id="btnLobbyBack" class="ghost">Quay lại</button>
     <div class="tips">Hai người nhận cùng một loạt trái cây trong 60 giây, ai nhiều điểm hơn thì thắng. Trúng bom bị trừ 10 điểm.<br>
-      Combo từ 4 quả trở lên sẽ tặng đối thủ mực che màn hình hoặc ném bom sang! 🦑💣</div>
+      Combo từ 4 quả trở lên sẽ tặng đối thủ mực che màn hình hoặc ném bom sang! 🦑💣<br>
+      Bóng lưỡi dao của đối thủ hiện mờ trên màn hình bạn — nhìn xem họ đang chém quả nào!</div>
   </div>
   <div id="lobbyRoom" class="stack hidden">
     <p class="sub">Mã phòng</p>
@@ -429,6 +448,90 @@ function refreshMenuBest() {
 }
 refreshMenuBest();
 
+// ---------- Skin lưỡi dao & thành tích ----------
+function load(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
+function store(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+
+// glow: màu vệt sáng (r,g,b) · core: màu lõi · ember: hạt bay ra khi vung · prog: [tiến độ, mục tiêu]
+const SKINS = [
+  { id: 'classic', name: 'Cổ điển', glow: '150,225,255', core: '#ffffff', need: 'Có sẵn' },
+  { id: 'leaf', name: 'Lá chuối', glow: '110,215,80', core: '#eaffd8', ember: 'leaf', need: 'Chém tổng cộng 200 quả', prog: s => [s.fruits, 200] },
+  { id: 'fire', name: 'Lửa', glow: '255,120,30', core: '#fff3c0', ember: 'fire', need: 'Đạt 100 điểm trong một ván', prog: s => [s.bestScore, 100] },
+  { id: 'frost', name: 'Băng giá', glow: '140,220,255', core: '#ffffff', ember: 'snow', need: 'Chém 5 quả băng', prog: s => [s.ices, 5] },
+  { id: 'bolt', name: 'Sấm sét', glow: '255,230,80', core: '#fffbe0', jag: true, need: 'Combo 6 quả trong một nhát', prog: s => [s.bestCombo, 6] },
+  { id: 'gold', name: 'Sầu riêng vàng', glow: '255,195,30', core: '#fff6c8', ember: 'gold', need: 'Chém nát 3 quả sầu riêng', prog: s => [s.durians, 3] },
+  { id: 'sakura', name: 'Hoa đào', glow: '255,140,195', core: '#fff0f6', ember: 'petal', need: 'Đạt 250 điểm trong một ván', prog: s => [s.bestScore, 250] },
+  { id: 'rainbow', name: 'Cầu vồng', rainbow: true, core: '#ffffff', need: 'Chuỗi 50 quả không trượt', prog: s => [s.bestStreak, 50] },
+  { id: 'night', name: 'Bóng đêm', glow: '170,90,255', core: '#e2c8ff', ember: 'smoke', need: 'Thắng 5 trận đối kháng', prog: s => [s.wins, 5] },
+];
+const SKIN_BY_ID = Object.fromEntries(SKINS.map(s => [s.id, s]));
+const EMBERS = {
+  leaf:  { colors: ['#7fd36a', '#4caf3a', '#b6f07a'], g: .1, life: .6, r: [2, 3.5] },
+  fire:  { colors: ['#ffd23f', '#ff8a1e', '#ff4b1e'], g: -.12, life: .45, r: [2, 4.5] },
+  snow:  { colors: ['#ffffff', '#cdf3ff'], g: .04, life: .7, r: [1.5, 3] },
+  gold:  { colors: ['#ffe27a', '#fff6c8', '#ffc21e'], g: .25, life: .5, r: [1.5, 3] },
+  petal: { colors: ['#ffb3d1', '#ff8fc0', '#ffe0ec'], g: .06, life: .9, r: [2.5, 4] },
+  smoke: { colors: ['rgba(120,60,190,.7)', 'rgba(60,20,100,.7)'], g: -.04, life: .55, r: [4, 8] },
+};
+
+const stats = Object.assign({ fruits: 0, ices: 0, durians: 0, wins: 0, bestCombo: 0, bestStreak: 0, bestScore: 0 }, load('ctc_stats', {}));
+stats.bestScore = Math.max(stats.bestScore, getBest('classic'), getBest('arcade'));
+const skinDone = sk => !sk.prog || (([v, n]) => v >= n)(sk.prog(stats));
+const unlocked = new Set(load('ctc_unlocked', []));
+for (const sk of SKINS) if (skinDone(sk)) unlocked.add(sk.id); // thành tích có từ trước thì mở luôn, không báo
+let skinId = load('ctc_skin', 'classic');
+if (!unlocked.has(skinId)) skinId = 'classic';
+const curSkin = () => SKIN_BY_ID[skinId];
+
+function saveStats() { store('ctc_stats', stats); }
+
+function checkUnlocks() {
+  for (const sk of SKINS) {
+    if (unlocked.has(sk.id) || !skinDone(sk)) continue;
+    unlocked.add(sk.id);
+    store('ctc_unlocked', [...unlocked]);
+    saveStats();
+    pop(`🔓 Mở khóa lưỡi dao ${sk.name}!`, W / 2, H * .16, '#7dff8a', 28);
+    toast(`Mở khóa lưỡi dao mới: ${sk.name} — chọn trong menu "Lưỡi dao"`);
+    sfx.power('x2');
+  }
+}
+
+function emitEmber(kind, x, y) {
+  const e = EMBERS[kind];
+  parts.push({ x, y, vx: rand(-40, 40) * S, vy: rand(-40, 20) * S, r: rand(e.r[0], e.r[1]) * S, color: pick(e.colors), life: e.life, max: e.life, g: e.g });
+}
+
+const skinCss = sk => sk.rainbow ? 'linear-gradient(90deg,#ff4d4d,#ffb84d,#fff04d,#5dff6a,#4dc3ff,#b84dff)'
+  : `linear-gradient(90deg, rgba(${sk.glow},.15), rgb(${sk.glow}) 60%, ${sk.core})`;
+
+function refreshSkinBtn() { $('btnSkins').textContent = `🗡 Lưỡi dao (${unlocked.size}/${SKINS.length})`; }
+
+function renderSkins() {
+  const grid = $('skinGrid');
+  grid.textContent = '';
+  for (const sk of SKINS) {
+    const open = unlocked.has(sk.id), [v, n] = sk.prog ? sk.prog(stats) : [1, 1];
+    const b = document.createElement('button');
+    b.className = 'skin' + (open ? '' : ' locked') + (sk.id === skinId ? ' on' : '');
+    const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = skinCss(sk);
+    const nm = document.createElement('b'); nm.textContent = (open ? '' : '🔒 ') + sk.name;
+    const st = document.createElement('small');
+    st.textContent = sk.id === skinId ? '✔ Đang dùng' : open ? 'Bấm để chọn' : `${sk.need} (${Math.min(v, n)}/${n})`;
+    b.append(sw, nm, st);
+    b.onclick = () => {
+      if (!open) { toast(sk.need); return; }
+      skinId = sk.id; store('ctc_skin', skinId); renderSkins();
+    };
+    grid.appendChild(b);
+  }
+  $('skinCount').textContent = `Đã mở khóa ${unlocked.size}/${SKINS.length}. Đối thủ cũng thấy lưỡi dao của bạn khi đấu!`;
+}
+
+$('btnSkins').onclick = () => { $('menu').classList.add('hidden'); $('skins').classList.remove('hidden'); renderSkins(); };
+$('btnSkinBack').onclick = () => toMenu();
+refreshSkinBtn();
+
 // Chế độ đối kháng thay rng bằng bộ sinh có seed để 2 máy ra cùng một loạt trái cây
 let rng = Math.random;
 function mulberry32(a) {
@@ -490,7 +593,7 @@ function startGame(m) {
   streak = 0; slowT = 0; nextDurian = 18; rainT = 0; lastTick = -1; atkT = 0;
   fx.ice = fx.x2 = fx.rain = 0;
   if (m !== 'vs') rng = Math.random;
-  for (const id of ['menu', 'over', 'pause', 'lobby', 'vsOver']) $(id).classList.add('hidden');
+  for (const id of ['menu', 'over', 'pause', 'lobby', 'vsOver', 'skins']) $(id).classList.add('hidden');
   $('pauseBtn').classList.toggle('hidden', m === 'vs');
 }
 
@@ -500,6 +603,7 @@ function endGame(reason) {
   dieT = reason === 'bomb' ? 1.5 : 1;
   queue = [];
   fx.ice = fx.x2 = fx.rain = 0;
+  saveStats();
   $('pauseBtn').classList.add('hidden');
 }
 
@@ -517,9 +621,10 @@ function showOver() {
 
 function toMenu() {
   state = 'menu'; paused = false; queue = [];
-  for (const id of ['over', 'pause', 'pauseBtn', 'lobby', 'vsOver']) $(id).classList.add('hidden');
+  for (const id of ['over', 'pause', 'pauseBtn', 'lobby', 'vsOver', 'skins']) $(id).classList.add('hidden');
   $('menu').classList.remove('hidden');
   refreshMenuBest();
+  refreshSkinBtn();
 }
 
 function setPaused(p) {
@@ -548,6 +653,8 @@ function addScore(base, x, y, quiet) {
   if (state !== 'play') return 0;
   const p = base * mult();
   score += p;
+  if (score > stats.bestScore) stats.bestScore = score;
+  checkUnlocks();
   if (p > 1 && !quiet) pop('+' + p, x, y - 24 * S, fx.x2 > 0 ? '#ffd23f' : '#fff', 22);
   return p;
 }
@@ -563,6 +670,10 @@ function cut(f, ang) {
   splitFruit(f, ang);
   if (state !== 'play') return;
   streak++;
+  stats.fruits++;
+  stats.bestStreak = Math.max(stats.bestStreak, streak);
+  if (f.kind === 'ice') stats.ices++;
+  if (mode === 'vs') net.outCuts.push([f.x / W, f.y / H, performance.now()]);
   if (streak === 12 || streak === 30) {
     pop(`Chuỗi ${streak} quả · điểm x${streak === 30 ? 3 : 2} 🔥`, W / 2, H * .22, '#ffb347', 30);
     sfx.streak();
@@ -596,6 +707,7 @@ function burstDurian(f) {
   f.dead = true;
   splitFruit(f, rand(0, TAU));
   addSplat(f.x, f.y, f.r * 1.4, f.t.juice);
+  if (f.hits >= DURIAN_MAX && state === 'play') stats.durians++;
   const p = addScore(f.hits >= DURIAN_MAX ? 15 : f.hits, 0, 0, true);
   if (p) { pop(`Sầu riêng! +${p}`, f.x, f.y - f.r, '#ffe27a', 34); sfx.combo(4); }
 }
@@ -663,10 +775,16 @@ function addPoint(x, y, time) {
   const p = { x, y, t: time };
   const a = trail[trail.length - 1];
   trail.push(p);
+  if (mode === 'vs' && state === 'play') { // ghi lại nét chém (tỉ lệ màn hình) để gửi bóng lưỡi dao cho đối thủ
+    const o = net.out, l = o[o.length - 1], nx = x / W, ny = y / H;
+    if (!a || !l || Math.abs(nx - l[0]) + Math.abs(ny - l[1]) > .004) o.push([nx, ny, time, a ? 0 : 1]);
+  }
   if (!a) return;
   const dx = x - a.x, dy = y - a.y, len = Math.hypot(dx, dy), dt = Math.max(1, time - a.t);
   if (len < 2 || len / dt < .22) return;
   if (len / dt > 1.1 && time - lastSwoosh > 170) { lastSwoosh = time; sfx.swoosh(); }
+  const sk = curSkin();
+  if (sk.ember && len / dt > .4 && Math.random() < .7) emitEmber(sk.ember, x, y);
   const ang = Math.atan2(dy, dx);
   for (const f of fruits) {
     if (f.dead || segDist(f.x, f.y, a, p) >= f.r * ((f.t && f.t.sx) || 1)) continue;
@@ -734,8 +852,10 @@ const net = {
   client: null, session: 0, room: '', host: false, opp: null, oppName: 'Đối thủ', oppLeft: false, lastSeen: 0,
   round: 0, played: 0, oppScore: 0, oppFinal: null, myFinal: null, resultShown: false, wins: 0, losses: 0,
   wantRematch: false, oppRematch: false, sentScore: -1, sentT: 0, comboOut: 0, lastBeep: -1,
-  ping: 0, joinTimer: 0, startT: 0, finalT: 0,
+  ping: 0, joinTimer: 0, startT: 0, finalT: 0, atkFlip: false,
+  out: [], outCuts: [], trSentT: 0, ghost: [], ghostCuts: [], oppSkin: 'classic', // bóng lưỡi dao gửi đi / nhận về
 };
+const GHOST_DELAY = 100;
 let myName = '';
 try { myName = localStorage.getItem('ctc_name') || ''; } catch (e) {}
 if (!myName) myName = 'Người chơi ' + (100 + Math.random() * 900 | 0);
@@ -837,6 +957,9 @@ function onNet(m) {
       updateVsOverStatus();
       if (net.host && net.wantRematch) sendStart();
       return;
+    case 'tr':
+      if (fromOpp && m.round === net.played && (state === 'play' || state === 'dying')) onGhost(m, now);
+      return;
     case 'atk':
       if (!fromOpp || m.round !== net.played || state !== 'play' || now < vsStart) return;
       if (m.kind === 'ink') {
@@ -874,6 +997,7 @@ function beginVs(m) {
   Object.assign(net, {
     played: m.round, oppScore: 0, oppFinal: null, myFinal: null, resultShown: false, wantRematch: false, oppRematch: false,
     sentScore: -1, sentT: 0, comboOut: 0, lastBeep: -1, lastSeen: performance.now(),
+    out: [], outCuts: [], trSentT: 0, ghost: [], ghostCuts: [],
   });
   rng = mulberry32(m.seed | 0);
   vsStart = performance.now() + 3000;
@@ -887,6 +1011,29 @@ function netTick(now) {
     send('score', { score, combo: net.comboOut, round: net.played });
     net.sentScore = score; net.sentT = now; net.comboOut = 0;
   }
+  // Gửi nét chém khoảng 15 lần/giây, thời gian tính tương đối so với điểm đầu tiên của gói
+  if ((net.out.length || net.outCuts.length) && now - net.trSentT > 66) {
+    const t0 = Math.min(...net.out.map(q => q[2]), ...net.outCuts.map(q => q[2]));
+    const r3 = v => Math.round(v * 1000) / 1000;
+    send('tr', {
+      round: net.played, s: skinId,
+      p: net.out.map(q => [r3(q[0]), r3(q[1]), Math.round(q[2] - t0), q[3]]),
+      c: net.outCuts.map(q => [r3(q[0]), r3(q[1]), Math.round(q[2] - t0)]),
+    });
+    net.out = []; net.outCuts = []; net.trSentT = now;
+  }
+}
+
+function onGhost(m, now) {
+  if (SKIN_BY_ID[m.s]) net.oppSkin = m.s;
+  const ok = q => Array.isArray(q) && isFinite(q[0]) && isFinite(q[1]) && isFinite(q[2]);
+  const pts = (Array.isArray(m.p) ? m.p : []).filter(ok).slice(0, 200), cuts = (Array.isArray(m.c) ? m.c : []).filter(ok).slice(0, 50);
+  let span = 0;
+  for (const q of pts.concat(cuts)) span = Math.max(span, +q[2]);
+  // phát lại trễ GHOST_DELAY để các gói nối nhau liền mạch
+  const base = now + GHOST_DELAY - span;
+  for (const q of pts) net.ghost.push({ x: q[0] * W, y: q[1] * H, t: base + +q[2], b: q[3] ? 1 : 0 });
+  for (const q of cuts) net.ghostCuts.push({ x: q[0] * W, y: q[1] * H, t: base + +q[2] });
 }
 
 function showVsOver() {
@@ -909,7 +1056,10 @@ function finishVs() {
   net.resultShown = true;
   const me = net.myFinal, op = net.oppFinal !== null ? net.oppFinal : net.oppScore;
   $('vsOpp').textContent = op;
-  if (me > op) { net.wins++; $('vsTitle').textContent = 'Bạn thắng! 🏆'; sfx.combo(5); }
+  if (me > op) {
+    net.wins++; stats.wins++; saveStats(); checkUnlocks();
+    $('vsTitle').textContent = 'Bạn thắng! 🏆'; sfx.combo(5);
+  }
   else if (me < op) { net.losses++; $('vsTitle').textContent = 'Bạn thua rồi 😢'; sfx.miss(); }
   else $('vsTitle').textContent = 'Hòa! 🤝';
   $('vsTally').textContent = `Tỉ số: ${myName} ${net.wins} – ${net.losses} ${net.oppName}`;
@@ -1136,12 +1286,15 @@ function update(dt, now) {
   }
   for (let i = splats.length - 1; i >= 0; i--) if ((splats[i].life -= dt) <= 0) splats.splice(i, 1);
   for (let i = inks.length - 1; i >= 0; i--) if ((inks[i].life -= dt) <= 0) inks.splice(i, 1);
+  while (net.ghost.length && now - net.ghost[0].t > 500) net.ghost.shift();
+  while (net.ghostCuts.length && now - net.ghostCuts[0].t > 600) net.ghostCuts.shift();
   for (let i = pops.length - 1; i >= 0; i--) { const p = pops[i]; p.life -= dt; p.y -= 40 * S * dt; if (p.life <= 0) pops.splice(i, 1); }
 
   if (combo.n > 0) {
     combo.t -= dt;
     if (combo.t <= 0) {
       if (combo.n >= 3 && state === 'play') {
+        stats.bestCombo = Math.max(stats.bestCombo, combo.n);
         const p = addScore(combo.n, 0, 0, true);
         pop(`Combo ${combo.n} quả! +${p}`, Math.max(120 * S, Math.min(W - 120 * S, combo.x)), combo.y - 30 * S, '#7dff8a', 34);
         sfx.combo(combo.n);
@@ -1157,6 +1310,49 @@ function update(dt, now) {
   while (trail.length && now - trail[0].t > TRAIL_MS) trail.shift();
   flash = Math.max(0, flash - dt * 1.6);
   shake = Math.max(0, shake - dt * 40);
+}
+
+function bladeColor(sk, i, now, a) {
+  return sk.rainbow ? `hsla(${(now / 3 + i * 40) % 360},100%,62%,${a})` : `rgba(${sk.glow},${a})`;
+}
+
+// Vẽ vệt lưỡi dao: lớp sáng màu skin bên ngoài, lõi mảnh bên trong. Điểm có b = bắt đầu nét mới
+function drawBlade(pts, sk, now, alpha, life, glowW) {
+  if (pts.length < 2) return;
+  const jag = sk.jag ? 7 * S : 0, n = pts.length;
+  const P = jag ? pts.map((p, i) => i === 0 || i === n - 1 ? p : { x: p.x + rand(-jag, jag), y: p.y + rand(-jag, jag), t: p.t, b: p.b }) : pts;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalAlpha = alpha;
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 1; i < n; i++) {
+      if (P[i].b) continue;
+      const k = i / (n - 1), age = Math.min(1, Math.max(0, 1 - (now - P[i].t) / life));
+      if (age <= 0) continue;
+      ctx.lineWidth = (pass ? 5 : glowW) * S * k * age + .5;
+      ctx.strokeStyle = pass ? sk.core : bladeColor(sk, i, now, .6);
+      ctx.beginPath(); ctx.moveTo(P[i - 1].x, P[i - 1].y); ctx.lineTo(P[i].x, P[i].y); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Bóng lưỡi dao của đối thủ (đi chậm hơn thực tế ~0,1 giây để vệt mượt)
+function drawGhost(now) {
+  const sk = SKIN_BY_ID[net.oppSkin] || SKINS[0];
+  for (const c of net.ghostCuts) {
+    const a = (now - c.t) / 500;
+    if (a < 0 || a > 1) continue;
+    ctx.strokeStyle = bladeColor(sk, 0, now, .7 * (1 - a)); ctx.lineWidth = 4 * S;
+    ctx.beginPath(); ctx.arc(c.x, c.y, (14 + 36 * a) * S, 0, TAU); ctx.stroke();
+  }
+  const vis = net.ghost.filter(p => p.t <= now);
+  if (!vis.length) return;
+  drawBlade(vis, sk, now, .45, TRAIL_MS * 1.6, 13);
+  const tip = vis[vis.length - 1];
+  if (now - tip.t < 250) {
+    ctx.globalAlpha = .75;
+    text(net.oppName, tip.x + 14 * S, tip.y - 30 * S, Math.round(14 * S), '#6fe3ff');
+    ctx.globalAlpha = 1;
+  }
 }
 
 function edgeGlow(rgb, a) {
@@ -1246,6 +1442,7 @@ function render(now) {
     ctx.globalAlpha = Math.max(0, p.life / p.max);
     ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
   }
+  if (mode === 'vs' && (state === 'play' || state === 'dying')) drawGhost(now);
   for (const k of inks) {
     ctx.globalAlpha = Math.min(1, k.life / .45) * .94;
     ctx.fillStyle = '#140f1f';
@@ -1257,20 +1454,8 @@ function render(now) {
   if (fx.x2 > 0) edgeGlow('255,200,40', .3 * Math.min(1, fx.x2 * 2));
   if (fx.rain > 0) edgeGlow('255,110,220', .3 * Math.min(1, fx.rain * 2));
 
-  // Lưỡi dao đổi màu theo chuỗi / hiệu ứng
-  const glow = fx.ice > 0 ? 'rgba(150,230,255,.6)' : streak >= 30 ? 'rgba(255,80,220,.6)' : streak >= 12 ? 'rgba(255,150,40,.65)' : 'rgba(150,225,255,.45)';
-  const glowW = streak >= 12 ? 20 : 15;
-  if (trail.length > 1) {
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    for (let pass = 0; pass < 2; pass++) {
-      for (let i = 1; i < trail.length; i++) {
-        const k = i / (trail.length - 1), age = Math.min(1, Math.max(0, 1 - (now - trail[i].t) / TRAIL_MS));
-        ctx.lineWidth = (pass ? 5 : glowW) * S * k * age + .5;
-        ctx.strokeStyle = pass ? '#ffffff' : glow;
-        ctx.beginPath(); ctx.moveTo(trail[i - 1].x, trail[i - 1].y); ctx.lineTo(trail[i].x, trail[i].y); ctx.stroke();
-      }
-    }
-  }
+  // Chuỗi lửa làm vệt sáng của lưỡi dao dày hơn
+  drawBlade(trail, curSkin(), now, 1, TRAIL_MS, streak >= 30 ? 24 : streak >= 12 ? 20 : 15);
 
   for (const p of pops) {
     ctx.globalAlpha = Math.min(1, p.life / p.max * 2);

@@ -21,11 +21,14 @@ Game chém trái cây chạy ngay trên trình duyệt — máy tính và điệ
 ## Chế độ
 - **Cổ điển:** 3 mạng, để rơi trái cây sẽ mất mạng, chém trúng bom là thua. Càng chơi càng khó.
 - **Tốc độ 60 giây:** chém càng nhiều càng tốt, trúng bom bị trừ 10 điểm.
-- **Đối kháng 2 người (online):** một người bấm *Tạo phòng mới* rồi gửi link mời (hoặc mã phòng 6 ký tự) cho bạn. Hai người nhận cùng một loạt trái cây trong 60 giây, điểm của đối thủ hiện trực tiếp, hết giờ ai nhiều điểm hơn thì thắng. Combo từ 4 quả trở lên sẽ **tấn công đối thủ**: lần lượt tặng mực che màn hình (vuốt để lau) hoặc ném 2 quả bom sang. Có nút *Đấu lại* và đếm tỉ số qua các trận.
+- **Đối kháng 2 người (online):** một người bấm *Tạo phòng mới* rồi gửi link mời (hoặc mã phòng 6 ký tự) cho bạn. Hai người nhận cùng một loạt trái cây trong 60 giây, điểm của đối thủ hiện trực tiếp, hết giờ ai nhiều điểm hơn thì thắng. Combo từ 4 quả trở lên sẽ **tấn công đối thủ**: lần lượt tặng mực che màn hình (vuốt để lau) hoặc ném 2 quả bom sang. Trên màn hình mỗi người hiện **bóng lưỡi dao của đối thủ** (mờ, đúng skin của họ, kèm tên) lướt trên cùng loạt trái cây. Có nút *Đấu lại* và đếm tỉ số qua các trận.
+
+### Lưỡi dao (skin)
+9 lưỡi dao mở khóa bằng thành tích, chọn trong menu **🗡 Lưỡi dao**: Cổ điển, Lá chuối (chém 200 quả), Lửa (100 điểm/ván), Băng giá (5 quả băng), Sấm sét (combo 6), Sầu riêng vàng (3 sầu riêng), Hoa đào (250 điểm/ván), Cầu vồng (chuỗi 50), Bóng đêm (thắng 5 trận đối kháng).
 
 Kỷ lục được lưu trên trình duyệt của từng người. Nút **Thách bạn bè** để gửi điểm kèm link cho người khác.
 
 ## Kỹ thuật
 Một file `index.html` duy nhất (HTML5 Canvas + Web Audio), không cần build.
 
-Chế độ đối kháng gửi tin nhắn qua MQTT broker công khai (`broker.emqx.io`, dự phòng `broker.hivemq.com`) bằng thư viện [mqtt.js](https://github.com/mqttjs/MQTT.js), nên không cần server riêng. Hai máy dùng chung một seed để ra cùng loạt trái cây; chỉ điểm số được gửi qua mạng.
+Chế độ đối kháng gửi tin nhắn qua MQTT broker công khai (`broker.emqx.io`, dự phòng `broker.hivemq.com`) bằng thư viện [mqtt.js](https://github.com/mqttjs/MQTT.js), nên không cần server riêng. Hai máy dùng chung một seed để ra cùng loạt trái cây; qua mạng chỉ gửi điểm số và nét chém (tọa độ theo tỉ lệ màn hình, ~15 gói/giây).
