@@ -13,7 +13,7 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #2a1a10; touch-action: none;
     user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-  canvas { display: block; position: fixed; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+  #c { display: block; position: fixed; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
   .overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 14px; padding: 24px; box-sizing: border-box; text-align: center; color: #fff;
     background: radial-gradient(ellipse at center, rgba(20,10,5,.35), rgba(20,10,5,.75)); }
@@ -67,7 +67,18 @@
   .rank li.me b { color: #ffd23f; }
   .roster { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 460px; }
   .roster li { padding: 7px 14px; border-radius: 999px; background: rgba(0,0,0,.4); box-shadow: inset 0 0 0 2px rgba(111,227,255,.5); font-size: 15px; }
-  .tabs { display: flex; gap: 8px; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  canvas.pv { display: block; width: 100%; max-width: 150px; height: auto; aspect-ratio: 160 / 112; }
+  .skIcon { font-size: 46px; line-height: 1.1; }
+  button.skin small.desc { opacity: .75; font-weight: 500; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 15px; cursor: pointer; }
+  .check input { width: 20px; height: 20px; padding: 0; margin: 0; }
+  .durPick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; font-size: 15px; }
+  .durPick button.tab { padding: 7px 14px; font-size: 14px; }
+  #skillBtn { right: 14px; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); width: 66px; height: 66px; font-size: 28px;
+    background: radial-gradient(circle, rgba(30,15,5,.88) 56%, transparent 58%), conic-gradient(#ffd23f var(--m, 0%), rgba(255,255,255,.18) 0);
+    box-shadow: none; }
+  #skillBtn.ready { animation: pulse .5s infinite alternate; box-shadow: 0 0 24px #ffd23f; }
   button.tab { padding: 9px 20px; font-size: 16px; background: rgba(0,0,0,.35); color: #fff; box-shadow: inset 0 0 0 2px rgba(255,255,255,.3); }
   button.tab.on { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3b1800; box-shadow: 0 4px 0 #a0560a; }
   .overlay.scroll { justify-content: flex-start; overflow-y: auto; touch-action: pan-y; padding-top: calc(24px + env(safe-area-inset-top, 0px)); }
@@ -95,10 +106,11 @@
   </div>
   <div class="row">
     <button id="btnLb" class="ghost">🏆 Bảng xếp hạng</button>
-    <button id="btnSkins" class="ghost">🗡 Lưỡi dao</button>
+    <button id="btnSkins" class="ghost">🎒 Tủ đồ</button>
   </div>
   <div class="best" id="menuBest"></div>
   <div class="tips">Máy tính: giữ chuột trái rồi kéo. Điện thoại: vuốt ngón tay.<br>
+    ⚡ Chém trái cây để nạp mana — đầy thanh thì bấm nút ⚡ (hoặc phím Space) tung tuyệt chiêu!<br>
     Cổ điển: lên cấp mỗi 25 quả kèm đợt đặc biệt · ♥ Chôm chôm hồi 1 mạng · 🛡 Dừa đỡ được 1 quả bom<br>
     Chém 3 quả trở lên trong một nhát để ăn combo. Chém liên tục không để rơi quả nào thì điểm x2, x3 🔥<br>
     ❄ Quả băng: thời gian chậm lại · ×2 Táo vàng: nhân đôi điểm · ★ Măng cụt: mưa trái cây<br>
@@ -133,9 +145,16 @@
 </div>
 
 <div id="skins" class="overlay scroll hidden">
-  <h2>Lưỡi dao</h2>
+  <h2>Tủ đồ</h2>
+  <div class="tabs">
+    <button id="wTab_outfit" class="tab on">Nhân vật</button>
+    <button id="wTab_weapon" class="tab">Vũ khí</button>
+    <button id="wTab_skill" class="tab">Tuyệt chiêu</button>
+    <button id="wTab_trail" class="tab">Vệt chém</button>
+  </div>
   <p class="sub" id="skinCount"></p>
   <div id="skinGrid" class="grid"></div>
+  <label class="check"><input type="checkbox" id="heroToggle"> Hiện nhân vật khi chơi</label>
   <button id="btnSkinBack" class="ghost">Quay lại</button>
 </div>
 
@@ -147,7 +166,7 @@
     <div class="row" id="createRow"><button id="btnCreate">Tạo phòng mới</button></div>
     <div class="row"><input id="codeIn" placeholder="Mã phòng" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false"><button id="btnJoin" class="alt">Vào phòng</button></div>
     <button id="btnLobbyBack" class="ghost">Quay lại</button>
-    <div class="tips">2–6 người nhận cùng một loạt trái cây trong 60 giây, ai nhiều điểm nhất thì thắng. Trúng bom bị trừ 10 điểm.<br>
+    <div class="tips">2–6 người nhận cùng một loạt trái cây trong thời gian chủ phòng chọn (30 giây – 3 phút), ai nhiều điểm nhất thì thắng. Trúng bom bị trừ 10 điểm.<br>
       Combo từ 4 quả trở lên sẽ tặng người đang dẫn đầu mực che màn hình hoặc ném bom sang! 🦑💣<br>
       Bóng lưỡi dao của mọi người hiện mờ trên màn hình bạn — nhìn xem họ đang chém quả nào!</div>
   </div>
@@ -157,6 +176,7 @@
     <div class="link" id="roomLink"></div>
     <button id="btnInvite" class="alt">Gửi link mời bạn</button>
     <ul id="roster" class="roster"></ul>
+    <div class="durPick" id="durLobby"></div>
     <p class="status" id="lobbyStatus"></p>
     <button id="btnStart" class="hidden">Bắt đầu</button>
     <button id="btnLeave" class="ghost">Rời phòng</button>
@@ -167,6 +187,7 @@
   <h2 id="vsTitle">Hết giờ!</h2>
   <ol id="vsRank" class="rank"></ol>
   <div class="best" id="vsTally"></div>
+  <div class="durPick" id="durOver"></div>
   <p class="status" id="vsStatus"></p>
   <div class="row">
     <button id="btnRematch" class="hidden">Trận mới</button>
@@ -185,6 +206,7 @@
 
 <button id="pauseBtn" class="corner hidden" aria-label="Tạm dừng">⏸</button>
 <button id="muteBtn" class="corner" aria-label="Bật/tắt âm thanh">🔊</button>
+<button id="skillBtn" class="corner hidden" aria-label="Tung tuyệt chiêu"><span id="skillIcon">🔥</span></button>
 <div id="toast" style="opacity:0"></div>
 
 <script>
@@ -470,6 +492,7 @@ const sfx = {
   thock() { tone(240, 120, .08, .25, 'square'); noise(.08, 'lowpass', 1500, 400, .25); },
   tick() { tone(1400, 1400, .04, .07, 'square'); },
   ink() { noise(.35, 'lowpass', 700, 150, .45); tone(160, 70, .3, .2); },
+  skill() { noise(.9, 'bandpass', 300, 2400, .5, .8); [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, f * 1.01, .3, .12, 'sawtooth', i * .06)); },
 };
 
 // ---------- Trạng thái ----------
@@ -493,7 +516,7 @@ function refreshMenuBest() {
 }
 refreshMenuBest();
 
-// ---------- Skin lưỡi dao & thành tích ----------
+// ---------- Tủ đồ (vệt chém, nhân vật, vũ khí, tuyệt chiêu) & thành tích ----------
 function load(key, def) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
 function store(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
 
@@ -519,25 +542,66 @@ const EMBERS = {
   smoke: { colors: ['rgba(120,60,190,.7)', 'rgba(60,20,100,.7)'], g: -.04, life: .55, r: [4, 8] },
 };
 
-const stats = Object.assign({ fruits: 0, ices: 0, durians: 0, wins: 0, bestCombo: 0, bestStreak: 0, bestScore: 0 }, load('ctc_stats', {}));
+// Trang phục nhân vật: body áo, pants quần, hat kiểu mũ
+const OUTFITS = [
+  { id: 'o_farmer', name: 'Nông dân', body: '#9a6a3a', pants: '#3b3b46', hat: 'nonla', need: 'Có sẵn' },
+  { id: 'o_ninja', name: 'Ninja', body: '#2a2a3e', pants: '#1c1c28', hat: 'ninja', need: 'Chém tổng cộng 100 quả', prog: s => [s.fruits, 100] },
+  { id: 'o_chef', name: 'Đầu bếp', body: '#f4f4f4', pants: '#34343c', hat: 'chef', need: 'Combo 5 quả trong một nhát', prog: s => [s.bestCombo, 5] },
+  { id: 'o_fighter', name: 'Võ sĩ', body: '#ffffff', pants: '#f0f0f0', belt: '#16161a', hat: 'band', need: 'Thắng 2 trận đối kháng', prog: s => [s.wins, 2] },
+  { id: 'o_astro', name: 'Phi hành gia', body: '#e6edf5', pants: '#c9d3df', hat: 'helmet', need: 'Đạt 150 điểm trong một ván', prog: s => [s.bestScore, 150] },
+  { id: 'o_cat', name: 'Mèo con', body: '#ffad42', pants: '#f08c1e', hat: 'cat', need: 'Lên cấp 6 ở chế độ Cổ điển', prog: s => [s.bestLevel, 6] },
+];
+// Vũ khí nhân vật cầm trên tay
+const WEAPONS = [
+  { id: 'w_knife', name: 'Dao bếp', need: 'Có sẵn' },
+  { id: 'w_machete', name: 'Dao rựa', need: 'Combo 4 quả trong một nhát', prog: s => [s.bestCombo, 4] },
+  { id: 'w_katana', name: 'Kiếm dài', need: 'Chém tổng cộng 300 quả', prog: s => [s.fruits, 300] },
+  { id: 'w_axe', name: 'Rìu', need: 'Lên cấp 4 ở chế độ Cổ điển', prog: s => [s.bestLevel, 4] },
+  { id: 'w_ladle', name: 'Cái muôi', need: 'Thắng 1 trận đối kháng', prog: s => [s.wins, 1] },
+  { id: 'w_laser', name: 'Kiếm ánh sáng', need: 'Chuỗi 40 quả không trượt', prog: s => [s.bestStreak, 40] },
+];
+// Tuyệt chiêu: đầy thanh mana thì tung được một lần
+const SKILLS = [
+  { id: 'k_fire', name: 'Hỏa Luân', icon: '🔥', desc: 'Vòng lửa lan khắp màn hình, đốt mọi trái cây và thiêu luôn bom', need: 'Có sẵn' },
+  { id: 'k_wind', name: 'Cuồng Phong', icon: '🌪️', desc: 'Lốc xoáy quét ngang, hút trái cây vào chém, thổi bay bom', need: 'Có sẵn' },
+  { id: 'k_sword', name: 'Vạn Kiếm', icon: '⚔️', desc: 'Mưa kiếm từ trời bám theo từng quả mà chém', need: 'Chém tổng cộng 150 quả', prog: s => [s.fruits, 150] },
+  { id: 'k_ice', name: 'Băng Phong', icon: '❄️', desc: 'Đóng băng mọi thứ giữa không trung 4 giây, bom băng vô hại', need: 'Chém 3 quả băng', prog: s => [s.ices, 3] },
+  { id: 'k_snow', name: 'Bão Tuyết', icon: '☃️', desc: 'Thời gian chậm hẳn 5 giây, bom hóa thành cầu tuyết', need: 'Lên cấp 3 ở chế độ Cổ điển', prog: s => [s.bestLevel, 3] },
+  { id: 'k_dragon', name: 'Chưởng Rồng', icon: '🐉', desc: 'Rồng vàng uốn lượn khắp màn hình, chém sạch trái cây trên đường bay', need: 'Đạt 200 điểm trong một ván', prog: s => [s.bestScore, 200] },
+];
+const WARDROBE = {
+  outfit: { label: 'Nhân vật', kind: 'trang phục', list: OUTFITS, key: 'ctc_outfit' },
+  weapon: { label: 'Vũ khí', kind: 'vũ khí', list: WEAPONS, key: 'ctc_weapon' },
+  skill: { label: 'Tuyệt chiêu', kind: 'tuyệt chiêu', list: SKILLS, key: 'ctc_skill' },
+  trail: { label: 'Vệt chém', kind: 'vệt chém', list: SKINS, key: 'ctc_skin' },
+};
+const ITEM_BY_ID = {};
+for (const [cat, w] of Object.entries(WARDROBE)) for (const it of w.list) { it.cat = cat; ITEM_BY_ID[it.id] = it; }
+const ALL_ITEMS = Object.values(ITEM_BY_ID);
+
+const stats = Object.assign({ fruits: 0, ices: 0, durians: 0, wins: 0, bestCombo: 0, bestStreak: 0, bestScore: 0, bestLevel: 1 }, load('ctc_stats', {}));
 stats.bestScore = Math.max(stats.bestScore, getBest('classic'), getBest('arcade'));
 const skinDone = sk => !sk.prog || (([v, n]) => v >= n)(sk.prog(stats));
 const unlocked = new Set(load('ctc_unlocked', []));
-for (const sk of SKINS) if (skinDone(sk)) unlocked.add(sk.id); // thành tích có từ trước thì mở luôn, không báo
-let skinId = load('ctc_skin', 'classic');
-if (!unlocked.has(skinId)) skinId = 'classic';
-const curSkin = () => SKIN_BY_ID[skinId];
+for (const it of ALL_ITEMS) if (skinDone(it)) unlocked.add(it.id); // thành tích có từ trước thì mở luôn, không báo
+// Đồ đang dùng của từng loại
+const equip = {};
+for (const [cat, w] of Object.entries(WARDROBE)) {
+  const v = load(w.key, w.list[0].id);
+  equip[cat] = unlocked.has(v) && ITEM_BY_ID[v] && ITEM_BY_ID[v].cat === cat ? v : w.list[0].id;
+}
+const curSkin = () => SKIN_BY_ID[equip.trail];
 
 function saveStats() { store('ctc_stats', stats); }
 
 function checkUnlocks() {
-  for (const sk of SKINS) {
-    if (unlocked.has(sk.id) || !skinDone(sk)) continue;
-    unlocked.add(sk.id);
+  for (const it of ALL_ITEMS) {
+    if (unlocked.has(it.id) || !skinDone(it)) continue;
+    unlocked.add(it.id);
     store('ctc_unlocked', [...unlocked]);
     saveStats();
-    pop(`🔓 Mở khóa lưỡi dao ${sk.name}!`, W / 2, H * .16, '#7dff8a', 28);
-    toast(`Mở khóa lưỡi dao mới: ${sk.name} — chọn trong menu "Lưỡi dao"`);
+    pop(`🔓 Mở khóa ${WARDROBE[it.cat].kind}: ${it.name}!`, W / 2, H * .16, '#7dff8a', 26);
+    toast(`Mở khóa ${WARDROBE[it.cat].kind} mới: ${it.name} — chọn trong "Tủ đồ"`);
     sfx.power('x2');
   }
 }
@@ -550,32 +614,418 @@ function emitEmber(kind, x, y) {
 const skinCss = sk => sk.rainbow ? 'linear-gradient(90deg,#ff4d4d,#ffb84d,#fff04d,#5dff6a,#4dc3ff,#b84dff)'
   : `linear-gradient(90deg, rgba(${sk.glow},.15), rgb(${sk.glow}) 60%, ${sk.core})`;
 
-function refreshSkinBtn() { $('btnSkins').textContent = `🗡 Lưỡi dao (${unlocked.size}/${SKINS.length})`; }
+// ---------- Tủ đồ ----------
+let wardTab = 'outfit';
+function refreshSkinBtn() { $('btnSkins').textContent = `🎒 Tủ đồ (${unlocked.size}/${ALL_ITEMS.length})`; }
+
+function itemPreview(it) {
+  if (it.cat === 'trail') { const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = skinCss(it); return sw; }
+  if (it.cat === 'skill') { const ic = document.createElement('span'); ic.className = 'skIcon'; ic.textContent = it.icon; return ic; }
+  const pv = document.createElement('canvas');
+  pv.width = 160; pv.height = 112; pv.className = 'pv';
+  const c = pv.getContext('2d');
+  if (it.cat === 'outfit') drawChar(c, 70, 106, 1, { outfit: it.id, weapon: equip.weapon, face: 1, arm: -.9, now: 0 });
+  else { c.translate(28, 74); c.rotate(-.4); c.scale(1.7, 1.7); drawWeapon(c, it.id, 0); }
+  return pv;
+}
 
 function renderSkins() {
+  for (const cat in WARDROBE) $('wTab_' + cat).classList.toggle('on', cat === wardTab);
   const grid = $('skinGrid');
   grid.textContent = '';
-  for (const sk of SKINS) {
-    const open = unlocked.has(sk.id), [v, n] = sk.prog ? sk.prog(stats) : [1, 1];
+  for (const it of WARDROBE[wardTab].list) {
+    const open = unlocked.has(it.id), on = equip[it.cat] === it.id, [v, n] = it.prog ? it.prog(stats) : [1, 1];
     const b = document.createElement('button');
-    b.className = 'skin' + (open ? '' : ' locked') + (sk.id === skinId ? ' on' : '');
-    const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = skinCss(sk);
-    const nm = document.createElement('b'); nm.textContent = (open ? '' : '🔒 ') + sk.name;
+    b.className = 'skin' + (open ? '' : ' locked') + (on ? ' on' : '');
+    const nm = document.createElement('b'); nm.textContent = (open ? '' : '🔒 ') + it.name;
     const st = document.createElement('small');
-    st.textContent = sk.id === skinId ? '✔ Đang dùng' : open ? 'Bấm để chọn' : `${sk.need} (${Math.min(v, n)}/${n})`;
-    b.append(sw, nm, st);
+    st.textContent = on ? '✔ Đang dùng' : open ? 'Bấm để chọn' : `${it.need} (${Math.min(v, n)}/${n})`;
+    b.append(itemPreview(it), nm);
+    if (it.desc) { const d = document.createElement('small'); d.className = 'desc'; d.textContent = it.desc; b.append(d); }
+    b.append(st);
     b.onclick = () => {
-      if (!open) { toast(sk.need); return; }
-      skinId = sk.id; store('ctc_skin', skinId); renderSkins();
+      if (!open) { toast(it.need); return; }
+      equip[it.cat] = it.id; store(WARDROBE[it.cat].key, it.id); renderSkins();
     };
     grid.appendChild(b);
   }
-  $('skinCount').textContent = `Đã mở khóa ${unlocked.size}/${SKINS.length}. Đối thủ cũng thấy lưỡi dao của bạn khi đấu!`;
+  $('skinCount').textContent = `Đã mở khóa ${unlocked.size}/${ALL_ITEMS.length}. ${wardTab === 'trail' ? 'Đối thủ cũng thấy vệt chém của bạn khi đấu!' : ''}`;
+  $('heroToggle').checked = showHero;
 }
 
 $('btnSkins').onclick = () => { $('menu').classList.add('hidden'); $('skins').classList.remove('hidden'); renderSkins(); };
 $('btnSkinBack').onclick = () => toMenu();
+for (const cat in WARDROBE) $('wTab_' + cat).onclick = () => { wardTab = cat; renderSkins(); };
+$('heroToggle').onchange = e => { showHero = e.target.checked; store('ctc_hero', showHero); };
 refreshSkinBtn();
+
+// ---------- Nhân vật: đứng dưới đáy, nhảy vút lên theo nhát chém ----------
+let showHero = load('ctc_hero', true);
+const hero = { x: -1, y: 0, vx: 0, vy: 0, air: false, face: 1, swingT: 1, swingDir: 0, lastLeap: -1e9, lastSwing: -1e9, squash: 0, castT: 0 };
+const heroGround = () => H - 4 * S;
+
+function heroLeap(tx, ty, ang, time) {
+  hero.swingDir = ang; hero.swingT = 0;
+  if (hero.air && (hero.vy < 0 || time - hero.lastLeap < 300)) return; // đang bay lên thì chỉ vung tiếp
+  hero.lastLeap = time;
+  const g = H * 3, top = Math.max(H * .2, Math.min(heroGround() - 50 * S, ty + 55 * S)); // vũ khí (ngang vai) chạm đúng chỗ chém
+  const rise = Math.max(20 * S, hero.y - top), tA = Math.sqrt(2 * rise / g);
+  hero.vy = -Math.sqrt(2 * g * rise);
+  hero.vx = (Math.max(24 * S, Math.min(W - 24 * S, tx)) - hero.x) / tA;
+  hero.air = true;
+  if (Math.abs(hero.vx) > 20) hero.face = hero.vx > 0 ? 1 : -1;
+}
+
+function heroUpdate(dt) {
+  const gy = heroGround();
+  if (hero.x < 0) { hero.x = W / 2; hero.y = gy; }
+  hero.swingT = Math.min(1, hero.swingT + dt / .22);
+  hero.squash = Math.max(0, hero.squash - dt * 5);
+  hero.castT = Math.max(0, hero.castT - dt);
+  if (hero.air) {
+    hero.vy += H * 3 * dt; hero.x += hero.vx * dt; hero.y += hero.vy * dt;
+    if (hero.y >= gy) { hero.y = gy; hero.air = false; hero.vx = 0; hero.squash = 1; }
+  } else hero.y = gy;
+  hero.x = Math.max(24 * S, Math.min(W - 24 * S, hero.x));
+}
+
+// Góc tay cầm vũ khí: vung một vòng theo hướng chém, lúc nghỉ thì giơ chếch lên
+function heroArm() {
+  if (hero.castT > 0) return -Math.PI / 2;
+  if (hero.swingT < 1) return hero.swingDir + (1 - (1 - hero.swingT) ** 3 - .5) * 2.6;
+  if (hero.air) return hero.swingDir + 1.3;
+  return hero.face > 0 ? -1 : Math.PI + 1;
+}
+
+function rrect(c, x, y, w, h, r) {
+  c.beginPath(); c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+
+// Vẽ nhân vật, gốc tọa độ ở chân. o: { outfit, weapon, face, arm, air, squash, now }
+function drawChar(c, x, y, s, o) {
+  const of = ITEM_BY_ID[o.outfit] || OUTFITS[0], f = o.face || 1, SKIN = '#f6c9a0', sq = o.squash || 0;
+  c.save(); c.translate(x, y); c.scale(s * (1 + sq * .12), s * (1 - sq * .15));
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  if (!o.air) { c.fillStyle = 'rgba(0,0,0,.25)'; ellipse(c, 0, 0, 20, 4); c.fill(); }
+  // chân (co lại khi đang bay)
+  c.strokeStyle = of.pants; c.lineWidth = 8; c.beginPath();
+  if (o.air) { c.moveTo(-6, -28); c.lineTo(-13, -17); c.lineTo(-6, -9); c.moveTo(6, -28); c.lineTo(14, -19); c.lineTo(9, -11); }
+  else { c.moveTo(-6, -28); c.lineTo(-8, -5); c.moveTo(6, -28); c.lineTo(8, -5); }
+  c.stroke();
+  if (!o.air) { c.fillStyle = '#2b1d14'; ellipse(c, -9, -3, 6, 3.5); c.fill(); ellipse(c, 9, -3, 6, 3.5); c.fill(); }
+  // tay sau
+  c.strokeStyle = of.body; c.lineWidth = 7; c.beginPath(); c.moveTo(-f * 9, -47); c.lineTo(-f * 17, -34); c.stroke();
+  // thân
+  c.fillStyle = of.body; rrect(c, -14, -57, 28, 32, 9); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.15)'; c.lineWidth = 1.5; c.stroke();
+  if (of.belt) { c.fillStyle = of.belt; c.fillRect(-14, -34, 28, 5); }
+  // đầu
+  const hy = -73;
+  c.fillStyle = SKIN; c.beginPath(); c.arc(0, hy, 16, 0, TAU); c.fill();
+  if (of.hat === 'ninja') { c.fillStyle = of.body; c.beginPath(); c.arc(0, hy, 17, 0, TAU); c.fill(); c.fillStyle = SKIN; rrect(c, -12 + f * 2, hy - 7, 24, 10, 5); c.fill(); }
+  if (of.hat === 'band' || of.hat === 'chef') { c.fillStyle = '#2a1a12'; c.beginPath(); c.arc(0, hy - 2, 16, Math.PI * 1.05, Math.PI * 1.95); c.fill(); }
+  c.fillStyle = '#222'; ellipse(c, f * 3 - 5, hy - 2, 2.2, 2.8); c.fill(); ellipse(c, f * 3 + 5, hy - 2, 2.2, 2.8); c.fill();
+  if (of.hat !== 'ninja') {
+    c.strokeStyle = '#9a4a3a'; c.lineWidth = 1.6; c.beginPath(); c.arc(f * 3, hy + 5, 4, .3, Math.PI - .3); c.stroke();
+    c.fillStyle = 'rgba(255,120,120,.35)'; ellipse(c, f * 3 - 10, hy + 4, 3, 2); c.fill(); ellipse(c, f * 3 + 10, hy + 4, 3, 2); c.fill();
+  }
+  drawHat(c, of.hat, hy, f, o.now || 0);
+  // tay trước + vũ khí: góc tính theo hướng chém trên màn hình nên không lật theo mặt
+  const a = o.arm, sx = f * 8, sy = -48, hx = sx + Math.cos(a) * 17, hyy = sy + Math.sin(a) * 17;
+  c.strokeStyle = of.body; c.lineWidth = 7; c.beginPath(); c.moveTo(sx, sy); c.lineTo(hx, hyy); c.stroke();
+  c.save(); c.translate(hx, hyy); c.rotate(a); drawWeapon(c, o.weapon, o.now || 0); c.restore();
+  c.fillStyle = SKIN; c.beginPath(); c.arc(hx, hyy, 4.5, 0, TAU); c.fill();
+  c.restore();
+}
+
+function drawHat(c, hat, hy, f, now) {
+  const tails = color => { // dải khăn bay phía sau đầu
+    const w = Math.sin(now / 110) * 4;
+    c.strokeStyle = color; c.lineWidth = 4; c.beginPath();
+    c.moveTo(-f * 15, hy - 9); c.quadraticCurveTo(-f * 26, hy - 8 + w, -f * 34, hy - 2 - w); c.stroke();
+  };
+  switch (hat) {
+    case 'nonla':
+      c.fillStyle = '#ecd59a'; c.beginPath(); c.moveTo(-31, hy - 5); c.lineTo(31, hy - 5); c.lineTo(0, hy - 34); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(150,110,40,.55)'; c.lineWidth = 1.2;
+      for (const k of [-20, -9, 2, 13, 24]) { c.beginPath(); c.moveTo(0, hy - 34); c.lineTo(k, hy - 5); c.stroke(); }
+      c.strokeStyle = '#8a5a2b'; c.beginPath(); c.arc(0, hy, 15, .4, Math.PI - .4); c.stroke();
+      break;
+    case 'ninja':
+      c.fillStyle = '#e0283c'; c.fillRect(-17, hy - 13, 34, 5); tails('#e0283c');
+      break;
+    case 'band':
+      c.fillStyle = '#e0283c'; c.fillRect(-16, hy - 11, 32, 5); tails('#e0283c');
+      break;
+    case 'chef':
+      c.fillStyle = '#fff'; c.strokeStyle = '#d6d6d6'; c.lineWidth = 1.2;
+      c.fillRect(-12, hy - 27, 24, 13); c.strokeRect(-12, hy - 27, 24, 13);
+      for (const [x, y, r] of [[-8, hy - 31, 8], [8, hy - 31, 8], [0, hy - 36, 9]]) { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); c.stroke(); }
+      break;
+    case 'helmet':
+      c.fillStyle = 'rgba(170,220,255,.25)'; c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 3;
+      c.beginPath(); c.arc(0, hy, 22, 0, TAU); c.fill(); c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2.5; c.beginPath(); c.arc(0, hy, 17, -2.5, -1.7); c.stroke();
+      c.fillStyle = '#c9d3df'; c.fillRect(-12, hy + 17, 24, 6);
+      break;
+    case 'cat':
+      for (const sx of [-1, 1]) {
+        c.fillStyle = '#ffad42'; c.beginPath(); c.moveTo(sx * 4, hy - 14); c.lineTo(sx * 15, hy - 31); c.lineTo(sx * 15, hy - 9); c.fill();
+        c.fillStyle = '#ff8fa8'; c.beginPath(); c.moveTo(sx * 8, hy - 14); c.lineTo(sx * 13.5, hy - 25); c.lineTo(sx * 13.5, hy - 12); c.fill();
+      }
+      c.strokeStyle = 'rgba(80,50,30,.7)'; c.lineWidth = 1;
+      for (const sx of [-1, 1]) for (const dy of [2, 6]) { c.beginPath(); c.moveTo(f * 3 + sx * 8, hy + dy); c.lineTo(f * 3 + sx * 20, hy + dy - 2 + (dy - 4)); c.stroke(); }
+      break;
+  }
+}
+
+// Vẽ vũ khí dọc trục x, tay cầm ở gốc tọa độ
+function drawWeapon(c, id, now) {
+  switch (id) {
+    case 'w_machete':
+      c.fillStyle = '#3a2a1e'; rrect(c, -5, -3, 15, 6, 2); c.fill();
+      c.fillStyle = '#8d979f'; c.beginPath(); c.moveTo(10, -4); c.lineTo(40, -7); c.quadraticCurveTo(47, 0, 40, 6); c.lineTo(10, 4); c.fill();
+      c.strokeStyle = '#eef3f6'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(12, 3.5); c.lineTo(40, 5.5); c.stroke();
+      break;
+    case 'w_katana':
+      c.fillStyle = '#1b1b22'; rrect(c, -7, -2.5, 19, 5, 2); c.fill();
+      c.strokeStyle = '#f2f2f2'; c.lineWidth = 1;
+      for (let k = -4; k < 11; k += 4) { c.beginPath(); c.moveTo(k, -2.5); c.lineTo(k + 2, 2.5); c.stroke(); }
+      c.fillStyle = '#d4a017'; ellipse(c, 12.5, 0, 2.5, 6.5); c.fill();
+      c.fillStyle = '#dfe6ec'; c.beginPath(); c.moveTo(14, -2.2); c.quadraticCurveTo(40, -5, 64, -8); c.lineTo(60, -2.5); c.quadraticCurveTo(38, 1.5, 14, 2.2); c.fill();
+      break;
+    case 'w_axe':
+      c.strokeStyle = '#8a5a2b'; c.lineWidth = 4.5; c.beginPath(); c.moveTo(-6, 0); c.lineTo(38, 0); c.stroke();
+      c.fillStyle = '#8d959c'; c.beginPath(); c.moveTo(28, -2); c.lineTo(29, -12); c.quadraticCurveTo(42, -22, 47, -6); c.quadraticCurveTo(41, -2, 37, -2); c.closePath(); c.fill();
+      c.strokeStyle = '#e6ebef'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(31, -14); c.quadraticCurveTo(42, -20, 46, -7); c.stroke();
+      break;
+    case 'w_ladle':
+      c.strokeStyle = '#b8c0c8'; c.lineWidth = 3.5; c.beginPath(); c.moveTo(-5, 0); c.lineTo(30, 0); c.stroke();
+      c.fillStyle = '#c9d1d8'; c.beginPath(); c.arc(38, 0, 8.5, 0, TAU); c.fill();
+      c.fillStyle = '#8f99a3'; c.beginPath(); c.arc(38, 0, 5.5, 0, TAU); c.fill();
+      break;
+    case 'w_laser': {
+      c.fillStyle = '#4a4f57'; rrect(c, -7, -3.2, 18, 6.4, 2); c.fill();
+      c.fillStyle = '#9aa1aa'; c.fillRect(-2, -3.2, 2, 6.4); c.fillRect(4, -3.2, 2, 6.4);
+      const hue = 185 + 20 * Math.sin(now / 200);
+      c.save(); c.shadowColor = `hsl(${hue},100%,60%)`; c.shadowBlur = 14;
+      c.strokeStyle = `hsl(${hue},100%,70%)`; c.lineWidth = 6; c.beginPath(); c.moveTo(12, 0); c.lineTo(58, 0); c.stroke();
+      c.strokeStyle = '#fff'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(12, 0); c.lineTo(58, 0); c.stroke();
+      c.restore();
+      break;
+    }
+    default: // dao bếp
+      c.fillStyle = '#5a3a20'; rrect(c, -5, -3, 15, 6, 2); c.fill();
+      c.fillStyle = '#d9c09a'; c.beginPath(); c.arc(-1, 0, 1, 0, TAU); c.arc(5, 0, 1, 0, TAU); c.fill();
+      c.fillStyle = '#cfd6dc'; c.beginPath(); c.moveTo(10, -3); c.lineTo(34, -3); c.quadraticCurveTo(41, -1, 40, 2); c.lineTo(10, 6); c.closePath(); c.fill();
+      c.strokeStyle = '#f4f7f9'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(12, 5); c.lineTo(38, 2.2); c.stroke();
+  }
+}
+
+// ---------- Mana & tuyệt chiêu ----------
+const MANA_MAX = 100;
+let mana = 0, skill = null; // skill: tuyệt chiêu đang diễn ra
+let skillShown = '';
+
+function gainMana(v) {
+  if (state !== 'play' || skill) return; // đang tung chiêu thì không nạp, tránh tung liên tục
+  const was = mana >= MANA_MAX;
+  mana = Math.min(MANA_MAX, mana + v);
+  if (!was && mana >= MANA_MAX) { pop('TUYỆT CHIÊU SẴN SÀNG! ⚡', W / 2, H * .62, '#ffe27a', 26); sfx.streak(); }
+}
+
+function castSkill() {
+  if (state !== 'play' || paused || mana < MANA_MAX || skill || (mode === 'vs' && performance.now() < vsStart)) return;
+  mana = 0;
+  const it = ITEM_BY_ID[equip.skill];
+  skill = { id: it.id, t: 0, swords: [], swordT: 0, path: [], cx: hero.x, cy: hero.y - 50 * S };
+  pop(`${it.icon} ${it.name.toUpperCase()}!`, W / 2, H * .3, '#ffe27a', 48);
+  sfx.skill();
+  shake = Math.max(shake, 10 * S); flash = Math.max(flash, .3);
+  hero.castT = .8;
+  heroLeap(W / 2, H * .5, -Math.PI / 2, performance.now());
+  if (it.id === 'k_ice') for (const f of fruits) if (!f.dead) f.frozen = true;
+  if (mode === 'vs') send('sk', { id: it.id, round: net.played });
+}
+
+// Bom bị tuyệt chiêu xử lý: tan thành khói (hoặc vỡ thành tuyết), không nổ
+function defuse(f, snowy) {
+  f.dead = true;
+  for (let i = 0; i < 12; i++) {
+    parts.push({ x: f.x, y: f.y, vx: rand(-140, 140) * S, vy: rand(-180, 30) * S, r: rand(3, 8) * S,
+      color: snowy ? pick(['#ffffff', '#d6ecff']) : pick(['rgba(90,90,100,.7)', 'rgba(150,150,160,.6)']), life: .7, max: .7, g: snowy ? .5 : -.05 });
+  }
+  if (snowy && state === 'play') addScore(1, f.x, f.y);
+}
+
+function skillHit(f, ang) {
+  if (f.dead) return;
+  if (f.bomb) { defuse(f, f.frozen || f.snowball); return; }
+  if (f.kind === 'durian') { f.hits = Math.max(f.hits, 6); burstDurian(f); return; }
+  cut(f, ang);
+}
+
+function updateSkill(dt) {
+  const s = skill;
+  if (!s) return;
+  s.t += dt;
+  switch (s.id) {
+    case 'k_fire': { // vòng lửa lan ra từ chỗ nhân vật
+      const R = s.t / .9 * Math.hypot(W, H);
+      for (const f of fruits) if (!f.dead && Math.hypot(f.x - s.cx, f.y - s.cy) < R) skillHit(f, Math.atan2(f.y - s.cy, f.x - s.cx));
+      for (let i = 0; i < 8; i++) {
+        const a = rand(0, TAU);
+        parts.push({ x: s.cx + Math.cos(a) * R, y: s.cy + Math.sin(a) * R, vx: 0, vy: -60 * S, r: rand(3, 7) * S, color: pick(['#ffd23f', '#ff8a1e', '#ff4b1e']), life: .4, max: .4, g: -.1 });
+      }
+      if (s.t > .9) skill = null;
+      break;
+    }
+    case 'k_wind': { // lốc xoáy quét từ trái sang phải, hút trái cây vào
+      s.x = -120 * S + (W + 240 * S) * (s.t / 1.8);
+      for (const f of fruits) {
+        if (f.dead) continue;
+        const dx = s.x - f.x;
+        if (Math.abs(dx) > 150 * S) continue;
+        if (f.bomb) defuse(f, false);
+        else { f.vx += dx * 8 * dt; f.vy -= 300 * S * dt; if (Math.abs(dx) < 45 * S) skillHit(f, Math.PI / 2); }
+      }
+      for (let i = 0; i < 3; i++) parts.push({ x: s.x + rand(-60, 60) * S, y: rand(.1, 1) * H, vx: rand(-200, 200) * S, vy: -rand(50, 250) * S, r: rand(2, 4) * S, color: pick(['#d9e6f2', '#a9bccc', '#8fd14f']), life: .5, max: .5, g: 0 });
+      if (s.t > 1.8) skill = null;
+      break;
+    }
+    case 'k_sword': { // mưa kiếm: mỗi thanh bám theo một quả
+      s.swordT -= dt;
+      if (s.t < 1.4 && s.swordT <= 0) {
+        s.swordT = .1;
+        const live = fruits.filter(f => !f.dead && !f.bomb && !f.targeted);
+        const tgt = live.length ? pick(live) : null;
+        if (tgt) tgt.targeted = true;
+        s.swords.push({ x: (tgt ? tgt.x : rand(.1, .9) * W) + rand(-80, 80) * S, y: -60 * S, tgt, vx: 0, vy: 1600 * S, life: 1 });
+      }
+      for (const sw of s.swords) {
+        if (sw.tgt && !sw.tgt.dead) {
+          const dx = sw.tgt.x - sw.x, dy = sw.tgt.y - sw.y, d = Math.hypot(dx, dy) || 1;
+          sw.vx = dx / d * 1600 * S; sw.vy = dy / d * 1600 * S;
+          if (d < sw.tgt.r) { skillHit(sw.tgt, Math.atan2(dy, dx)); sw.tgt = null; }
+        } else { sw.tgt = null; sw.life -= dt * 2; }
+        sw.x += sw.vx * dt; sw.y += sw.vy * dt;
+      }
+      s.swords = s.swords.filter(sw => sw.life > 0 && sw.y < H + 100 * S && sw.y > -200 * S);
+      if (s.t > 1.4 && !s.swords.length) skill = null;
+      break;
+    }
+    case 'k_ice': // đóng băng: trái mới bay lên trong 0,3 giây đầu cũng bị đóng băng
+      if (s.t < .3) for (const f of fruits) if (!f.dead) f.frozen = true;
+      if (s.t > 4) { for (const f of fruits) f.frozen = false; skill = null; }
+      break;
+    case 'k_snow':
+      for (const f of fruits) if (f.bomb) f.snowball = true;
+      for (let i = 0; i < 3; i++) parts.push({ x: rand(0, W), y: -10, vx: rand(-30, 30) * S, vy: rand(60, 140) * S, r: rand(1.5, 3.5) * S, color: '#ffffff', life: 2.5, max: 2.5, g: 0 });
+      if (s.t > 5) skill = null;
+      break;
+    case 'k_dragon': { // rồng bay theo đường lượn sóng từ trái sang phải
+      const u = s.t / 2.4, hx = -.15 * W + 1.3 * W * u, hy = H * (.5 - .3 * Math.sin(u * TAU * 1.25));
+      s.path.unshift({ x: hx, y: hy });
+      if (s.path.length > 70) s.path.pop();
+      for (const f of fruits) if (!f.dead && Math.hypot(f.x - hx, f.y - hy) < 85 * S) skillHit(f, Math.atan2(f.y - hy, f.x - hx));
+      for (let i = 0; i < 3; i++) parts.push({ x: hx, y: hy, vx: rand(-120, 0) * S, vy: rand(-80, 80) * S, r: rand(3, 7) * S, color: pick(['#ffd23f', '#ff8a1e', '#fff3b0']), life: .45, max: .45, g: -.05 });
+      if (u > 1.2) skill = null;
+      break;
+    }
+  }
+}
+
+function drawSkillFx(now) {
+  const s = skill;
+  if (!s) return;
+  ctx.save();
+  switch (s.id) {
+    case 'k_fire': {
+      const R = s.t / .9 * Math.hypot(W, H), a = Math.max(0, 1 - s.t / .9);
+      ctx.lineWidth = 46 * S; ctx.strokeStyle = `rgba(255,110,20,${.5 * a})`; ctx.beginPath(); ctx.arc(s.cx, s.cy, R, 0, TAU); ctx.stroke();
+      ctx.lineWidth = 14 * S; ctx.strokeStyle = `rgba(255,235,140,${.9 * a})`; ctx.stroke();
+      break;
+    }
+    case 'k_wind':
+      ctx.lineWidth = 3 * S;
+      for (let k = 0; k < 16; k++) {
+        const y = H - k * H / 15, w = (18 + k * 10) * S, ox = Math.sin(now / 70 + k * .7) * 12 * S;
+        ctx.strokeStyle = `rgba(225,238,255,${.25 + .03 * k})`;
+        ellipse(ctx, s.x + ox, y, w, w * .22); ctx.stroke();
+      }
+      break;
+    case 'k_sword':
+      for (const sw of s.swords) {
+        ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, sw.life));
+        ctx.translate(sw.x, sw.y); ctx.rotate(Math.atan2(sw.vy, sw.vx) + Math.PI);
+        ctx.shadowColor = '#bfe9ff'; ctx.shadowBlur = 16; ctx.scale(1.4 * S, 1.4 * S);
+        ctx.translate(-64, 0); drawWeapon(ctx, 'w_katana', now);
+        ctx.restore();
+      }
+      break;
+    case 'k_ice':
+      edgeGlow('170,230,255', .55);
+      break;
+    case 'k_snow':
+      edgeGlow('235,245,255', .45);
+      break;
+    case 'k_dragon': {
+      const P = s.path;
+      for (let i = P.length - 1; i >= 1; i -= 3) { // thân rồng: các đốt nhỏ dần về đuôi
+        const r = Math.max(8, 34 - i * .38) * S;
+        const g = ctx.createRadialGradient(P[i].x - r * .3, P[i].y - r * .3, r * .1, P[i].x, P[i].y, r);
+        g.addColorStop(0, '#fff3a0'); g.addColorStop(.6, '#ffb21e'); g.addColorStop(1, '#d2481e');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(P[i].x, P[i].y, r, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#c0301a'; ctx.beginPath(); ctx.moveTo(P[i].x - r * .4, P[i].y - r * .8); ctx.lineTo(P[i].x, P[i].y - r * 1.5); ctx.lineTo(P[i].x + r * .4, P[i].y - r * .8); ctx.fill();
+      }
+      if (P.length > 2) { // đầu rồng
+        const h = P[0], d = Math.atan2(h.y - P[2].y, h.x - P[2].x), r = 42 * S;
+        ctx.translate(h.x, h.y); ctx.rotate(d);
+        ctx.fillStyle = '#ffb21e'; ellipse(ctx, 0, 0, r * 1.25, r * .85); ctx.fill();
+        ctx.fillStyle = '#ffd23f'; ellipse(ctx, r * .9, r * .15, r * .6, r * .4); ctx.fill();
+        ctx.strokeStyle = '#8a3a10'; ctx.lineWidth = 5 * S; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-r * .3, -r * .6); ctx.lineTo(-r * 1.2, -r * 1.3); ctx.moveTo(r * .1, -r * .7); ctx.lineTo(-r * .6, -r * 1.5); ctx.stroke();
+        ctx.strokeStyle = '#fff3a0'; ctx.lineWidth = 2.5 * S;
+        ctx.beginPath(); ctx.moveTo(r * 1.3, r * .3); ctx.quadraticCurveTo(r * 1.9, r * .9 + Math.sin(now / 90) * r * .3, r * 2.3, r * .5); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(r * .35, -r * .3, r * .2, 0, TAU); ctx.fill();
+        ctx.fillStyle = '#c0301a'; ctx.beginPath(); ctx.arc(r * .4, -r * .3, r * .1, 0, TAU); ctx.fill();
+      }
+      break;
+    }
+  }
+  ctx.restore();
+}
+
+// Lớp băng phủ lên trái/bom đang bị đóng băng (vẽ tại gốc tọa độ)
+function frostOverlay(r) {
+  ctx.fillStyle = 'rgba(170,225,255,.42)'; ctx.beginPath(); ctx.arc(0, 0, r * 1.12, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-r * .5, -r * .2); ctx.lineTo(-r * .2, -r * .55); ctx.moveTo(r * .3, r * .4); ctx.lineTo(r * .55, r * .1); ctx.stroke();
+}
+
+function drawSnowball(f) {
+  ctx.save(); ctx.translate(f.x, f.y);
+  const g = ctx.createRadialGradient(-f.r * .3, -f.r * .3, f.r * .1, 0, 0, f.r);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#b8d4ea');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, f.r, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+// Nút ⚡: vòng ngoài đầy dần theo mana, sáng nhấp nháy khi tung được
+function updateSkillBtn() {
+  const btn = $('skillBtn'), show = state === 'play' && !paused;
+  const key = show ? `${Math.floor(mana)}|${equip.skill}|${!!skill}` : 'hide';
+  if (key === skillShown) return;
+  skillShown = key;
+  btn.classList.toggle('hidden', !show);
+  if (!show) return;
+  btn.style.setProperty('--m', mana + '%');
+  btn.classList.toggle('ready', mana >= MANA_MAX && !skill);
+  $('skillIcon').textContent = ITEM_BY_ID[equip.skill].icon;
+}
+$('skillBtn').onclick = castSkill;
 
 // Chế độ đối kháng thay rng bằng bộ sinh có seed để 2 máy ra cùng một loạt trái cây
 let rng = Math.random;
@@ -646,6 +1096,7 @@ function startGame(m) {
   fruits = []; queue = []; inks = []; combo.n = 0;
   streak = 0; slowT = 0; nextDurian = 18; rainT = 0; lastTick = -1; atkT = 0;
   level = 1; levelCuts = 0; shield = false;
+  mana = 0; skill = null;
   fx.ice = fx.x2 = fx.rain = 0;
   if (m !== 'vs') rng = Math.random;
   for (const id of ['menu', 'over', 'pause', 'lobby', 'vsOver', 'skins', 'lb']) $(id).classList.add('hidden');
@@ -722,7 +1173,7 @@ function breakStreak() {
 
 function cut(f, ang) {
   f.dead = true;
-  if (f.bomb) { explode(f); return; }
+  if (f.bomb) { if (f.frozen || f.snowball) defuse(f, true); else explode(f); return; }
   splitFruit(f, ang);
   if (state !== 'play') return;
   streak++;
@@ -735,6 +1186,7 @@ function cut(f, ang) {
     sfx.streak();
   }
   addScore(f.pts || 1, f.x, f.y);
+  gainMana(f.pts ? 6 : 4);
   combo.n++; combo.t = .28; combo.x = f.x; combo.y = f.y;
   if (f.kind === 'heart') {
     if (lives < 3) { lives++; pop('+1 MẠNG ♥', W / 2, H * .3, '#ff6a8a', 40); }
@@ -769,6 +1221,8 @@ const EVENTS = [
 
 function levelUp() {
   level++;
+  stats.bestLevel = Math.max(stats.bestLevel, level);
+  checkUnlocks();
   const ev = EVENTS[(level - 2) % EVENTS.length];
   pop(`CẤP ${level}!`, W / 2, H * .2, '#ffd23f', 52);
   pop(ev.text, W / 2, H * .2 + 62 * S, ev.color, 26);
@@ -787,6 +1241,7 @@ function durianHit(f, time) {
   shake = Math.max(shake, 5 * S);
   sfx.thock();
   addScore(1, f.x + rand(-.5, .5) * f.r, f.y - f.r * .6);
+  gainMana(1);
   if (f.hits >= DURIAN_MAX) burstDurian(f);
 }
 
@@ -842,6 +1297,7 @@ function explode(b) {
     return;
   }
   breakStreak();
+  mana = Math.max(0, mana - 30);
   if (mode === 'classic') { endGame('bomb'); }
   else {
     score = Math.max(0, score - 10);
@@ -879,6 +1335,7 @@ function addPoint(x, y, time) {
   const sk = curSkin();
   if (sk.ember && len / dt > .4 && Math.random() < .7) emitEmber(sk.ember, x, y);
   const ang = Math.atan2(dy, dx);
+  if (len / dt > .5 && time - hero.lastSwing > 90) { hero.lastSwing = time; heroLeap(x, y, ang, time); }
   for (const f of fruits) {
     if (f.dead || segDist(f.x, f.y, a, p) >= f.r * ((f.t && f.t.sx) || 1)) continue;
     if (f.kind !== 'durian') cut(f, ang);
@@ -926,6 +1383,7 @@ $('btnShare').onclick = async () => {
 };
 addEventListener('keydown', e => {
   if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') setPaused(!paused);
+  if (e.code === 'Space' && state === 'play') { e.preventDefault(); castSkill(); }
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
 
@@ -951,8 +1409,12 @@ const net = {
   sentScore: -1, sentT: 0, comboOut: 0, lastBeep: -1,
   ping: 0, joinTimer: 0, finalT: 0, atkFlip: false,
   out: [], outCuts: [], trSentT: 0, // nét chém của mình đang chờ gửi
+  dur: 60, // thời gian trận (giây) chủ phòng chọn
 };
 const GHOST_DELAY = 100;
+const DURS = [30, 60, 90, 120, 180];
+let vsDur = 60;
+const durLabel = d => d < 60 ? `${d} giây` : `${String(d / 60).replace('.', ',')} phút`;
 let myName = '';
 try { myName = localStorage.getItem('ctc_name') || ''; } catch (e) {}
 if (!myName) myName = 'Người chơi ' + (100 + Math.random() * 900 | 0);
@@ -1022,7 +1484,7 @@ function dropSilent() {
 }
 
 function sendRoster() {
-  send('roster', { list: net.roster, playing: state === 'play' || state === 'dying' }, 1);
+  send('roster', { list: net.roster, playing: state === 'play' || state === 'dying', dur: net.dur }, 1);
   renderRoster();
 }
 
@@ -1047,6 +1509,7 @@ function onNet(m) {
       const list = m.list.filter(q => q && typeof q.id === 'string').slice(0, MAX_PLAYERS).map(q => ({ id: q.id, name: cleanName(q.name) }));
       if (!list.some(q => q.id === myId)) return;
       net.hostId = m.from; net.roster = list; net.hostPlaying = !!m.playing;
+      net.dur = DURS.includes(m.dur) ? m.dur : 60;
       stopJoin();
       renderRoster();
       return;
@@ -1074,6 +1537,9 @@ function onNet(m) {
       return;
     case 'tr':
       if (p && m.round === net.played && (state === 'play' || state === 'dying')) onGhost(p, m, now);
+      return;
+    case 'sk':
+      if (p && m.round === net.played && ITEM_BY_ID[m.id] && state === 'play') pop(`${p.name} tung ${ITEM_BY_ID[m.id].name}! ${ITEM_BY_ID[m.id].icon}`, W / 2, H * .22, '#ff9ae0', 24);
       return;
     case 'atk':
       if (!p || m.to !== myId || m.round !== net.played || state !== 'play' || now < vsStart) return;
@@ -1115,7 +1581,7 @@ function sendAttack() {
 function sendStart() {
   if (!net.host || net.roster.length < 2) return;
   net.round = Math.max(net.round, net.played) + 1;
-  send('start', { seed: Math.random() * 2147483647 | 0, round: net.round, players: net.roster }, 1);
+  send('start', { seed: Math.random() * 2147483647 | 0, round: net.round, players: net.roster, dur: net.dur }, 1);
 }
 
 function beginVs(m, list) {
@@ -1132,6 +1598,7 @@ function beginVs(m, list) {
   });
   rng = mulberry32(m.seed | 0);
   vsStart = now + 3000;
+  vsDur = DURS.includes(m.dur) ? m.dur : 60;
   startGame('vs');
   if (net.host) sendRoster(); // báo cho người vào sau biết phòng đang có trận
 }
@@ -1149,7 +1616,7 @@ function netTick(now) {
     const t0 = Math.min(...net.out.map(q => q[2]), ...net.outCuts.map(q => q[2]));
     const r3 = v => Math.round(v * 1000) / 1000;
     send('tr', {
-      round: net.played, s: skinId,
+      round: net.played, s: equip.trail,
       p: net.out.map(q => [r3(q[0]), r3(q[1]), Math.round(q[2] - t0), q[3]]),
       c: net.outCuts.map(q => [r3(q[0]), r3(q[1]), Math.round(q[2] - t0)]),
     });
@@ -1289,7 +1756,27 @@ function renderRoster() {
   } else if (inRoster(myId) && !net.hostLeft) {
     lobbyStatus(net.hostPlaying ? 'Phòng đang có trận — bạn sẽ vào trận sau.' : 'Đã vào phòng! Chờ chủ phòng bấm Bắt đầu...');
   }
+  renderDur();
   updateVsOverStatus();
+}
+
+// Chủ phòng chọn thời gian trận; người khác chỉ xem
+function renderDur() {
+  for (const id of ['durLobby', 'durOver']) {
+    const box = $(id);
+    box.textContent = '';
+    if (!net.host) { box.textContent = `⏱ Thời gian trận: ${durLabel(net.dur)}`; continue; }
+    const lb = document.createElement('span');
+    lb.textContent = '⏱ Thời gian trận:';
+    box.appendChild(lb);
+    for (const d of DURS) {
+      const b = document.createElement('button');
+      b.className = 'tab' + (d === net.dur ? ' on' : '');
+      b.textContent = durLabel(d);
+      b.onclick = () => { net.dur = d; sendRoster(); };
+      box.appendChild(b);
+    }
+  }
 }
 
 function drawVsHud(now) {
@@ -1322,6 +1809,7 @@ function drawVsHud(now) {
   if (now < vsStart) {
     text(String(Math.ceil((vsStart - now) / 1000)), W / 2, H / 2 - 80 * S, Math.round(140 * S), '#fff', 'center');
     text(others.length === 1 ? `${myName}  vs  ${others[0].name}` : `${others.length + 1} người đấu nhau!`, W / 2, H / 2 + 80 * S, Math.round(24 * S), '#ffd23f', 'center');
+    text(`Trận ${durLabel(vsDur)}`, W / 2, H / 2 + 116 * S, Math.round(18 * S), '#fff', 'center');
   } else if (now < vsStart + 700) {
     text('Chém!', W / 2, H / 2 - 60 * S, Math.round(110 * S), '#ffd23f', 'center');
   }
@@ -1410,7 +1898,7 @@ function leaveRoom() {
   clearInterval(net.ping); stopJoin(); clearTimeout(net.finalT);
   Object.assign(net, {
     client: null, room: '', host: false, hostId: null, hostLeft: false, hostPlaying: false,
-    roster: [], seen: new Map(), players: new Map(), round: 0, played: 0, wins: 0, resultShown: false,
+    roster: [], seen: new Map(), players: new Map(), round: 0, played: 0, wins: 0, resultShown: false, dur: 60,
   });
   rng = Math.random;
   if (location.search) history.replaceState(null, '', location.pathname);
@@ -1543,14 +2031,16 @@ for (const m of LB_MODES) $('lbTab_' + m).onclick = () => { lbMode = m; renderLb
 
 // ---------- Vòng lặp ----------
 function update(dt, now) {
+  heroUpdate(dt);
+  updateSkill(dt);
   slowT = Math.max(0, slowT - dt);
   for (const k of POWERS) fx[k] = Math.max(0, fx[k] - dt);
-  const gdt = dt * (fx.ice > 0 ? .4 : slowT > 0 ? .45 : 1); // thời gian trong game (chậm lại khi đóng băng / combo lớn)
+  const gdt = dt * (skill && skill.id === 'k_snow' ? .3 : fx.ice > 0 ? .4 : slowT > 0 ? .45 : 1); // thời gian trong game (chậm lại khi đóng băng / combo lớn)
   if (state === 'play') {
     if (mode === 'vs') {
       // Đối kháng tính giờ theo đồng hồ thật để 2 máy kết thúc cùng lúc
       elapsed = Math.max(0, (now - vsStart) / 1000);
-      timeLeft = Math.max(0, 60 - elapsed);
+      timeLeft = Math.max(0, vsDur - elapsed);
       netTick(now);
     } else {
       elapsed += gdt;
@@ -1580,6 +2070,10 @@ function update(dt, now) {
 
   for (let i = fruits.length - 1; i >= 0; i--) {
     const f = fruits[i];
+    if (f.frozen && !f.dead) { // Băng Phong: đứng yên giữa không trung
+      if (skill && skill.id === 'k_ice') continue;
+      f.frozen = false;
+    }
     if (f.held && !f.dead) {
       f.hold -= dt;
       f.squash = Math.max(0, f.squash - dt * 6);
@@ -1587,7 +2081,7 @@ function update(dt, now) {
       continue;
     }
     f.vy += G * gdt; f.x += f.vx * gdt; f.y += f.vy * gdt; f.rot += f.vr * gdt;
-    if (f.bomb && !f.dead && Math.random() < .6) {
+    if (f.bomb && !f.dead && !f.snowball && !f.frozen && Math.random() < .6) {
       const c = Math.cos(f.rot), s = Math.sin(f.rot), lx = f.r * .42, ly = -f.r * 1.42;
       parts.push({ x: f.x + lx * c - ly * s, y: f.y + lx * s + ly * c, vx: rand(-60, 60) * S, vy: rand(-120, -20) * S,
         r: rand(1.5, 3) * S, color: pick(['#ffe36b', '#ffb21e', '#fff']), life: rand(.15, .35), max: .35, g: .2 });
@@ -1620,6 +2114,7 @@ function update(dt, now) {
     if (combo.t <= 0) {
       if (combo.n >= 3 && state === 'play') {
         stats.bestCombo = Math.max(stats.bestCombo, combo.n);
+        gainMana(combo.n * 2);
         const p = addScore(combo.n, 0, 0, true);
         pop(`Combo ${combo.n} quả! +${p}`, Math.max(120 * S, Math.min(W - 120 * S, combo.x)), combo.y - 30 * S, '#7dff8a', 34);
         sfx.combo(combo.n);
@@ -1710,6 +2205,7 @@ function render(now) {
   }
   ctx.globalAlpha = 1;
 
+  if (showHero) drawChar(ctx, hero.x, hero.y, .95 * S, { outfit: equip.outfit, weapon: equip.weapon, face: hero.face, arm: heroArm(), air: hero.air, squash: hero.squash, now });
   for (const p of pieces) {
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
     const R = p.r * 1.6;
@@ -1721,7 +2217,11 @@ function render(now) {
     ctx.restore();
   }
   for (const f of fruits) {
-    if (f.bomb) { drawBomb(f, now); continue; }
+    if (f.bomb) {
+      if (f.snowball) drawSnowball(f); else drawBomb(f, now);
+      if (f.frozen) { ctx.save(); ctx.translate(f.x, f.y); frostOverlay(f.r); ctx.restore(); }
+      continue;
+    }
     ctx.save(); ctx.translate(f.x, f.y);
     if (f.held) { // sầu riêng đang bị chém: rung và nảy theo từng nhát
       const j = 3 * S, s = 1 + f.squash * .1;
@@ -1735,6 +2235,7 @@ function render(now) {
       ctx.fillStyle = 'rgba(0,0,0,.18)'; ellipse(ctx, f.r * .15, f.r * .2, f.r, f.r * .95); ctx.fill();
     }
     drawSkin(ctx, f.t, f.r, f.rot);
+    if (f.frozen) frostOverlay(f.r);
     if (f.t.label) {
       ctx.font = `900 ${Math.round(f.r * .8)}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.lineWidth = f.r * .14; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(f.t.label, 0, 2);
@@ -1747,6 +2248,7 @@ function render(now) {
     ctx.globalAlpha = Math.max(0, p.life / p.max);
     ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill();
   }
+  drawSkillFx(now);
   if (mode === 'vs' && (state === 'play' || state === 'dying')) drawGhost(now);
   for (const k of inks) {
     ctx.globalAlpha = Math.min(1, k.life / .45) * .94;
@@ -1795,6 +2297,7 @@ function frame(now) {
   last = now;
   if (!paused) update(dt, now);
   render(now);
+  updateSkillBtn();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
