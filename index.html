@@ -58,11 +58,18 @@
   .link { font-size: 13px; opacity: .75; word-break: break-all; user-select: text; -webkit-user-select: text; max-width: 90vw; }
   .status { min-height: 1.4em; margin: 0; font-size: 16px; max-width: 460px; line-height: 1.4; }
   .status.err { color: #ff9a8a; }
-  .vsScores { display: flex; align-items: center; gap: 22px; }
-  .vsScores > div { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 15px; max-width: 38vw; overflow-wrap: anywhere; }
-  .vsScores b { font-size: clamp(48px, 13vw, 84px); line-height: 1; color: #ffd23f; text-shadow: 0 4px 0 #7a3b00; }
-  .vsScores > div:last-child b { color: #6fe3ff; text-shadow: 0 4px 0 #13648c; }
-  .vsMark { font-weight: 900; font-size: 22px; opacity: .7; }
+  .rank { list-style: none; margin: 0; padding: 0; width: min(440px, 100%); display: flex; flex-direction: column; gap: 6px; }
+  .rank li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 16px; border-radius: 12px;
+    background: rgba(0,0,0,.4); font-size: 17px; text-align: left; }
+  .rank li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank li b { color: #6fe3ff; font-size: 20px; }
+  .rank li.me { box-shadow: inset 0 0 0 2px #ffd23f; }
+  .rank li.me b { color: #ffd23f; }
+  .roster { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 460px; }
+  .roster li { padding: 7px 14px; border-radius: 999px; background: rgba(0,0,0,.4); box-shadow: inset 0 0 0 2px rgba(111,227,255,.5); font-size: 15px; }
+  .tabs { display: flex; gap: 8px; }
+  button.tab { padding: 9px 20px; font-size: 16px; background: rgba(0,0,0,.35); color: #fff; box-shadow: inset 0 0 0 2px rgba(255,255,255,.3); }
+  button.tab.on { background: linear-gradient(180deg, #ffe680, #ffb21e); color: #3b1800; box-shadow: 0 4px 0 #a0560a; }
   .overlay.scroll { justify-content: flex-start; overflow-y: auto; touch-action: pan-y; padding-top: calc(24px + env(safe-area-inset-top, 0px)); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; width: min(720px, 100%); }
   button.skin { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 12px; border-radius: 16px;
@@ -84,11 +91,15 @@
   <div class="row" style="margin-top:10px">
     <button id="btnClassic">Cổ điển<small>3 mạng, càng chơi càng khó</small></button>
     <button id="btnArcade" class="alt">Tốc độ 60 giây<small>Chém càng nhiều càng tốt</small></button>
-    <button id="btnVs" class="vs">Đối kháng 2 người<small>Đấu online với bạn bè</small></button>
+    <button id="btnVs" class="vs">Đối kháng<small>Đấu online 2–6 người</small></button>
   </div>
-  <button id="btnSkins" class="ghost">🗡 Lưỡi dao</button>
+  <div class="row">
+    <button id="btnLb" class="ghost">🏆 Bảng xếp hạng</button>
+    <button id="btnSkins" class="ghost">🗡 Lưỡi dao</button>
+  </div>
   <div class="best" id="menuBest"></div>
   <div class="tips">Máy tính: giữ chuột trái rồi kéo. Điện thoại: vuốt ngón tay.<br>
+    Cổ điển: lên cấp mỗi 25 quả kèm đợt đặc biệt · ♥ Chôm chôm hồi 1 mạng · 🛡 Dừa đỡ được 1 quả bom<br>
     Chém 3 quả trở lên trong một nhát để ăn combo. Chém liên tục không để rơi quả nào thì điểm x2, x3 🔥<br>
     ❄ Quả băng: thời gian chậm lại · ×2 Táo vàng: nhân đôi điểm · ★ Măng cụt: mưa trái cây<br>
     Sầu riêng khổng lồ: chém liên tục thật nhanh, đủ 12 nhát được thưởng lớn!</div>
@@ -99,11 +110,26 @@
   <div class="big" id="overScore">0</div>
   <div id="overNew" class="new hidden">🏆 Kỷ lục mới!</div>
   <div class="best" id="overBest"></div>
+  <div class="best" id="overRank"></div>
   <div class="row" style="margin-top:8px">
     <button id="btnAgain">Chơi lại</button>
     <button id="btnShare" class="alt">Thách bạn bè</button>
+    <button id="btnOverLb" class="ghost">🏆 Bảng xếp hạng</button>
     <button id="btnMenu" class="ghost">Menu</button>
   </div>
+</div>
+
+<div id="lb" class="overlay scroll hidden">
+  <h2>Bảng xếp hạng</h2>
+  <div class="tabs">
+    <button id="lbTab_classic" class="tab on">Cổ điển</button>
+    <button id="lbTab_arcade" class="tab">60 giây</button>
+  </div>
+  <p class="best" id="lbMine"></p>
+  <ol id="lbList" class="rank"></ol>
+  <p class="status" id="lbStatus"></p>
+  <div class="row"><input id="lbName" maxlength="14" autocomplete="nickname" aria-label="Tên hiển thị"><button id="lbRename" class="alt">Đổi tên</button></div>
+  <button id="lbBack" class="ghost">Quay lại</button>
 </div>
 
 <div id="skins" class="overlay scroll hidden">
@@ -114,39 +140,37 @@
 </div>
 
 <div id="lobby" class="overlay hidden">
-  <h2>Đối kháng 2 người</h2>
+  <h2>Đối kháng</h2>
   <div id="lobbyHome" class="stack">
     <p id="invited" class="sub hidden">Bạn được mời vào một trận đối kháng! ⚔️</p>
     <label class="field">Tên của bạn<input id="nameIn" maxlength="14" autocomplete="nickname"></label>
     <div class="row" id="createRow"><button id="btnCreate">Tạo phòng mới</button></div>
     <div class="row"><input id="codeIn" placeholder="Mã phòng" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false"><button id="btnJoin" class="alt">Vào phòng</button></div>
     <button id="btnLobbyBack" class="ghost">Quay lại</button>
-    <div class="tips">Hai người nhận cùng một loạt trái cây trong 60 giây, ai nhiều điểm hơn thì thắng. Trúng bom bị trừ 10 điểm.<br>
-      Combo từ 4 quả trở lên sẽ tặng đối thủ mực che màn hình hoặc ném bom sang! 🦑💣<br>
-      Bóng lưỡi dao của đối thủ hiện mờ trên màn hình bạn — nhìn xem họ đang chém quả nào!</div>
+    <div class="tips">2–6 người nhận cùng một loạt trái cây trong 60 giây, ai nhiều điểm nhất thì thắng. Trúng bom bị trừ 10 điểm.<br>
+      Combo từ 4 quả trở lên sẽ tặng người đang dẫn đầu mực che màn hình hoặc ném bom sang! 🦑💣<br>
+      Bóng lưỡi dao của mọi người hiện mờ trên màn hình bạn — nhìn xem họ đang chém quả nào!</div>
   </div>
   <div id="lobbyRoom" class="stack hidden">
     <p class="sub">Mã phòng</p>
     <div class="code" id="roomCode">…</div>
     <div class="link" id="roomLink"></div>
     <button id="btnInvite" class="alt">Gửi link mời bạn</button>
+    <ul id="roster" class="roster"></ul>
     <p class="status" id="lobbyStatus"></p>
+    <button id="btnStart" class="hidden">Bắt đầu</button>
     <button id="btnLeave" class="ghost">Rời phòng</button>
   </div>
 </div>
 
 <div id="vsOver" class="overlay hidden">
   <h2 id="vsTitle">Hết giờ!</h2>
-  <div class="vsScores">
-    <div><span id="vsMeName">Bạn</span><b id="vsMe">0</b></div>
-    <span class="vsMark">VS</span>
-    <div><span id="vsOppName">Đối thủ</span><b id="vsOpp">0</b></div>
-  </div>
+  <ol id="vsRank" class="rank"></ol>
   <div class="best" id="vsTally"></div>
   <p class="status" id="vsStatus"></p>
   <div class="row">
-    <button id="btnRematch">Đấu lại</button>
-    <button id="btnVsInvite" class="alt hidden">Mời người khác</button>
+    <button id="btnRematch" class="hidden">Trận mới</button>
+    <button id="btnVsInvite" class="alt hidden">Mời thêm người</button>
     <button id="btnVsLeave" class="ghost">Rời phòng</button>
   </div>
 </div>
@@ -189,6 +213,8 @@ const SPECIAL = {
   ice:    { id: 'bang', r: 35, skin: '#a8ecff', skin2: '#3b9fd1', hi: '#ffffff', rind: '#ecfcff', flesh: '#c4f1ff', juice: '#bdf0ff', segments: true, aura: '120,220,255', label: '❄' },
   x2:     { id: 'vang', r: 36, skin: '#ffd84a', skin2: '#c07f00', hi: '#fff8c8', rind: '#fff3c4', flesh: '#ffe680', seed: '#7a4a10', nSeeds: 5, juice: '#ffd23f', stem: true, aura: '255,210,60', label: '×2' },
   rain:   { id: 'mcut', r: 35, skin: '#7a2f6c', skin2: '#3a0d33', hi: '#c27ab5', rind: '#c9478c', flesh: '#fbf7ef', juice: '#f1e6f5', segments: true, segLine: 'rgba(190,150,180,.7)', cap: true, aura: '255,110,220', label: '★' },
+  heart:  { id: 'chomchom', r: 31, skin: '#e0283c', skin2: '#8c0f1e', hi: '#ff8a8a', rind: '#ffffff', flesh: '#f6f1e4', seed: '#7a4a22', nSeeds: 1, seedR: .2, juice: '#fff3f3', hairs: true, aura: '255,90,120', label: '♥' },
+  shield: { id: 'dua_xiem', r: 38, skin: '#8a5a2c', skin2: '#4e2f12', hi: '#c8935a', rind: '#ffffff', flesh: '#f3efe2', juice: '#f7f7f0', fiber: true, aura: '120,200,255', label: '🛡' },
   durian: { id: 'srieng', r: 64, skin: '#a3bd3f', skin2: '#566f14', hi: '#e2f0a0', rind: '#eef3c8', flesh: '#ffe07a', seed: '#8a5a2b', nSeeds: 4, seedR: .1, juice: '#ffe27a', spikes: true },
 };
 const POWERS = ['ice', 'x2', 'rain'];
@@ -224,6 +250,16 @@ function drawSkin(c, t, r, rot) {
       c.fillStyle = '#8cc63f'; c.fill();
     }
   }
+  if (t.hairs) { // lông chôm chôm
+    c.lineCap = 'round'; c.lineWidth = r * .07;
+    for (let k = 0; k < 30; k++) {
+      const a = k * TAU / 30, cs = Math.cos(a), sn = Math.sin(a);
+      c.strokeStyle = k % 3 ? '#d8263f' : '#7cbb3a';
+      c.beginPath(); c.moveTo(cs * r * .9, sn * r * .9);
+      c.quadraticCurveTo(cs * r * 1.2 - sn * r * .1, sn * r * 1.2 + cs * r * .1, cs * r * 1.3 - sn * r * .22, sn * r * 1.3 + cs * r * .22);
+      c.stroke();
+    }
+  }
   if (t.spikes) { // gai sầu riêng
     c.fillStyle = t.skin2;
     for (let k = 0; k < 26; k++) {
@@ -257,6 +293,14 @@ function drawSkin(c, t, r, rot) {
   } else if (t.kiwi) {
     c.fillStyle = 'rgba(50,30,10,.35)';
     for (let k = 0; k < 16; k++) { const a = k * 2.4, d = (k % 5 + 1) / 6 * r; ellipse(c, Math.cos(a) * d, Math.sin(a) * d, r * .04, r * .04); c.fill(); }
+  } else if (t.fiber) { // xơ và 3 mắt dừa
+    c.strokeStyle = 'rgba(40,20,5,.45)'; c.lineWidth = Math.max(1, r * .03);
+    for (let k = 0; k < 14; k++) {
+      const y = -r + (k + .5) * r * 2 / 14;
+      c.beginPath(); c.moveTo(-r, y + r * .1); c.quadraticCurveTo(0, y - r * .15, r, y + r * .1); c.stroke();
+    }
+    c.fillStyle = '#3a2210';
+    for (const [ex, ey] of [[-.2, -.5], [.2, -.5], [0, -.3]]) { ellipse(c, ex * r, ey * r, r * .08, r * .06); c.fill(); }
   } else if (t.spikes) {
     c.fillStyle = 'rgba(70,95,15,.55)';
     for (let k = 0; k < 40; k++) {
@@ -434,6 +478,7 @@ let score = 0, lives = 3, timeLeft = 60, elapsed = 0, nextWave = 0, dieT = 0, ov
 let fruits = [], pieces = [], parts = [], splats = [], pops = [], queue = [], trail = [];
 let flash = 0, shake = 0, down = false;
 let streak = 0, slowT = 0, nextDurian = 18, rainT = 0, lastTick = -1, atkT = 0, inks = [];
+let level = 1, levelCuts = 0, shield = false; // chỉ dùng ở chế độ Cổ điển
 const fx = { ice: 0, x2: 0, rain: 0 }; // thời gian còn lại (giây) của từng hiệu ứng
 const combo = { n: 0, t: 0, x: 0, y: 0 };
 const TRAIL_MS = 110;
@@ -557,6 +602,14 @@ function spawnOne(o) {
   const t = k === 'bomb' ? null : k === 'fruit' ? TYPES[o.type] : SPECIAL[k];
   const f = { t, kind: k, bomb: k === 'bomb', x, y, vx, vy, r: (t ? t.r : 34) * S, rot: rand(0, TAU), vr: big ? rand(-1, 1) : rand(-3, 3),
     seeds: t ? makeSeeds(t) : null, dead: false, hits: 0 };
+  if (o.mini) { f.r *= .6; f.pts = 3; }
+  if (o.pts) f.pts = o.pts;
+  if (o.bonus) f.bonus = true; // trái của đợt đặc biệt: để rơi không mất mạng, không mất chuỗi
+  if (o.side) { // gió ngang: bay từ mép trái/phải sang
+    f.x = o.side < 0 ? -f.r : W + f.r; f.y = H * (.35 + .3 * o.hf);
+    f.vx = -o.side * W * (.55 + .25 * o.tf); f.vy = -H * (.6 + .2 * o.xf);
+  }
+  if (o.ox || o.oy) { f.x += (o.ox || 0) * S; f.y += (o.oy || 0) * S; }
   fruits.push(f);
   sfx.toss();
   return f;
@@ -579,11 +632,12 @@ function spawnWave(at) {
     if (bomb) bombs++;
     let kind = bomb ? 'bomb' : 'fruit';
     if (!bomb && at > 6 && rng() < .07) kind = POWERS[rng() * POWERS.length | 0];
+    else if (kind === 'fruit' && mode === 'classic' && at > 10 && rng() < .035) kind = lives < 3 && rng() < .65 ? 'heart' : 'shield';
     queue.push(makeThrow(kind, at + (salvo ? i * .16 : rng() * .1)));
   }
 }
 
-const waveGap = at => mode === 'classic' ? Math.max(.75, 2.1 - at * .012) : Math.max(.55, 1.25 - at * .012);
+const waveGap = at => mode === 'classic' ? Math.max(.7, 2.1 - at * .012 - (level - 1) * .08) : Math.max(.55, 1.25 - at * .012);
 
 function startGame(m) {
   audio();
@@ -591,9 +645,10 @@ function startGame(m) {
   score = 0; lives = 3; timeLeft = 60; elapsed = 0; nextWave = .7;
   fruits = []; queue = []; inks = []; combo.n = 0;
   streak = 0; slowT = 0; nextDurian = 18; rainT = 0; lastTick = -1; atkT = 0;
+  level = 1; levelCuts = 0; shield = false;
   fx.ice = fx.x2 = fx.rain = 0;
   if (m !== 'vs') rng = Math.random;
-  for (const id of ['menu', 'over', 'pause', 'lobby', 'vsOver', 'skins']) $(id).classList.add('hidden');
+  for (const id of ['menu', 'over', 'pause', 'lobby', 'vsOver', 'skins', 'lb']) $(id).classList.add('hidden');
   $('pauseBtn').classList.toggle('hidden', m === 'vs');
 }
 
@@ -615,13 +670,14 @@ function showOver() {
   $('overTitle').textContent = overReason === 'bomb' ? 'Bùm! Trúng bom 💥' : overReason === 'time' ? 'Hết giờ! ⏰' : 'Hết mạng! 💔';
   $('overScore').textContent = score;
   $('overNew').classList.toggle('hidden', !isNew || score === 0);
-  $('overBest').textContent = `Kỷ lục ${mode === 'classic' ? 'Cổ điển' : '60 giây'}: ${Math.max(best, score)}`;
+  $('overBest').textContent = `Kỷ lục ${mode === 'classic' ? 'Cổ điển' : '60 giây'}: ${Math.max(best, score)}${mode === 'classic' ? ` · Đạt cấp ${level}` : ''}`;
   $('over').classList.remove('hidden');
+  submitBest(mode);
 }
 
 function toMenu() {
   state = 'menu'; paused = false; queue = [];
-  for (const id of ['over', 'pause', 'pauseBtn', 'lobby', 'vsOver', 'skins']) $(id).classList.add('hidden');
+  for (const id of ['over', 'pause', 'pauseBtn', 'lobby', 'vsOver', 'skins', 'lb']) $(id).classList.add('hidden');
   $('menu').classList.remove('hidden');
   refreshMenuBest();
   refreshSkinBtn();
@@ -678,14 +734,46 @@ function cut(f, ang) {
     pop(`Chuỗi ${streak} quả · điểm x${streak === 30 ? 3 : 2} 🔥`, W / 2, H * .22, '#ffb347', 30);
     sfx.streak();
   }
-  addScore(1, f.x, f.y);
+  addScore(f.pts || 1, f.x, f.y);
   combo.n++; combo.t = .28; combo.x = f.x; combo.y = f.y;
+  if (f.kind === 'heart') {
+    if (lives < 3) { lives++; pop('+1 MẠNG ♥', W / 2, H * .3, '#ff6a8a', 40); }
+    else { addScore(5, 0, 0, true); pop('Đủ mạng rồi: +5 điểm ♥', W / 2, H * .3, '#ff6a8a', 30); }
+    sfx.power('x2');
+  }
+  if (f.kind === 'shield') { shield = true; pop('KHIÊN CHỐNG BOM! 🛡', W / 2, H * .3, '#9fe8ff', 40); sfx.power('ice'); }
+  if (mode === 'classic' && ++levelCuts >= level * 25) levelUp();
   if (POWER_INFO[f.kind]) {
     const p = POWER_INFO[f.kind];
     fx[f.kind] = p.dur;
     pop(p.text, W / 2, H * .3, p.color, 40);
     sfx.power(f.kind);
   }
+}
+
+// Cổ điển: lên cấp mỗi 25 quả, mỗi cấp mở màn bằng một đợt đặc biệt
+const EVENTS = [
+  { text: 'Mưa dưa hấu! 🍉', color: '#ff6b7a',
+    make: d => Array.from({ length: 8 }, (_, i) => ({ ...makeThrow('fruit', d + i * .12, Math.random), type: 0, bonus: true })) },
+  { text: 'Gió ngang! 💨', color: '#9fe8ff',
+    make: d => Array.from({ length: 6 }, (_, i) => ({ ...makeThrow('fruit', d + i * .35, Math.random), side: i % 2 ? 1 : -1, bonus: true })) },
+  { text: 'Trái tí hon! +3 điểm mỗi quả', color: '#7dff8a',
+    make: d => Array.from({ length: 7 }, (_, i) => ({ ...makeThrow('fruit', d + i * .2, Math.random), mini: true, bonus: true })) },
+  { text: 'Vòng vây bom! Chém chéo vào giữa 💣', color: '#ff9a8a',
+    make: d => {
+      const b = { ...makeThrow('fruit', d, Math.random), type: 0 };
+      b.xf = .35 + .3 * b.xf; b.hf = .55 + .45 * b.hf; b.tf = .5;
+      return [{ ...b, pts: 5, bonus: true }, ...[[-1, 0], [1, 0], [0, -1], [0, 1]].map(([x, y]) => ({ ...b, kind: 'bomb', ox: x * 100, oy: y * 100 }))];
+    } },
+];
+
+function levelUp() {
+  level++;
+  const ev = EVENTS[(level - 2) % EVENTS.length];
+  pop(`CẤP ${level}!`, W / 2, H * .2, '#ffd23f', 52);
+  pop(ev.text, W / 2, H * .2 + 62 * S, ev.color, 26);
+  sfx.streak();
+  for (const o of ev.make(elapsed + 1.4)) queue.push(o);
 }
 
 // Sầu riêng: nhát đầu làm nó đứng lại giữa không trung, mỗi lần lưỡi dao lướt qua là một điểm
@@ -748,6 +836,11 @@ function explode(b) {
   }
   addSplat(b.x, b.y, b.r * 1.8, 'rgba(10,10,10,.9)');
   if (state !== 'play') return;
+  if (mode === 'classic' && shield) {
+    shield = false;
+    pop('Khiên đỡ bom! 🛡', b.x, b.y, '#9fe8ff', 36);
+    return;
+  }
   breakStreak();
   if (mode === 'classic') { endGame('bomb'); }
   else {
@@ -842,18 +935,22 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.opacity = 0, 2400);
 }
 
-// ---------- Đối kháng online (tin nhắn đi qua MQTT broker công khai) ----------
+// ---------- Đối kháng online 2–6 người (tin nhắn đi qua MQTT broker công khai) ----------
 const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
 const MQTT_SRC = 'https://cdn.jsdelivr.net/npm/mqtt@5.15.2/dist/mqtt.min.js';
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const MAX_PLAYERS = 6;
 const myId = Math.random().toString(36).slice(2, 10);
 let vsStart = 0;
+// Chủ phòng giữ danh sách phòng (roster, gồm cả mình) và phát cho mọi người.
+// players: những người khác trong trận đang đấu -> { name, skin, score, final, left, lastSeen, ghost, ghostCuts }
 const net = {
-  client: null, session: 0, room: '', host: false, opp: null, oppName: 'Đối thủ', oppLeft: false, lastSeen: 0,
-  round: 0, played: 0, oppScore: 0, oppFinal: null, myFinal: null, resultShown: false, wins: 0, losses: 0,
-  wantRematch: false, oppRematch: false, sentScore: -1, sentT: 0, comboOut: 0, lastBeep: -1,
-  ping: 0, joinTimer: 0, startT: 0, finalT: 0, atkFlip: false,
-  out: [], outCuts: [], trSentT: 0, ghost: [], ghostCuts: [], oppSkin: 'classic', // bóng lưỡi dao gửi đi / nhận về
+  client: null, session: 0, room: '', host: false, hostId: null, hostLeft: false, hostPlaying: false,
+  roster: [], seen: new Map(), players: new Map(),
+  round: 0, played: 0, myFinal: null, resultShown: false, wins: 0,
+  sentScore: -1, sentT: 0, comboOut: 0, lastBeep: -1,
+  ping: 0, joinTimer: 0, finalT: 0, atkFlip: false,
+  out: [], outCuts: [], trSentT: 0, // nét chém của mình đang chờ gửi
 };
 const GHOST_DELAY = 100;
 let myName = '';
@@ -871,6 +968,8 @@ const brokerOf = code => CODE_CHARS.indexOf(code[0]) % BROKERS.length;
 const roomTopic = () => 'chemtraicay/v1/' + net.room;
 const roomLink = () => location.origin + location.pathname + '?phong=' + net.room;
 const cleanScore = v => Math.max(0, Math.min(99999, v | 0));
+const cleanName = v => String(v || 'Người chơi').slice(0, 14);
+const inRoster = id => net.roster.some(q => q.id === id);
 
 function loadMqtt() {
   if (window.mqtt) return Promise.resolve();
@@ -909,99 +1008,132 @@ async function connectRoom(room, tok) {
 
 function afterConnect() {
   clearInterval(net.ping);
-  net.ping = setInterval(() => { if (net.opp) send('ping'); }, 2000);
+  net.ping = setInterval(() => {
+    send('ping');
+    if (net.host) dropSilent();
+  }, 2000);
+}
+
+// Chủ phòng: ai im lặng quá 20 giây thì coi như đã rời phòng
+function dropSilent() {
+  const now = performance.now();
+  const keep = net.roster.filter(q => q.id === myId || now - (net.seen.get(q.id) || 0) < 20000);
+  if (keep.length !== net.roster.length) { net.roster = keep; sendRoster(); }
+}
+
+function sendRoster() {
+  send('roster', { list: net.roster, playing: state === 'play' || state === 'dying' }, 1);
+  renderRoster();
 }
 
 function onNet(m) {
-  const now = performance.now(), name = String(m.name || 'Đối thủ').slice(0, 14);
-  const fromOpp = !!net.opp && m.from === net.opp;
-  if (fromOpp && m.type !== 'leave') { net.lastSeen = now; net.oppLeft = false; net.oppName = name; }
+  const now = performance.now(), name = cleanName(m.name);
+  if (net.host) net.seen.set(m.from, now);
+  const p = net.players.get(m.from);
+  if (p && m.type !== 'leave') { p.lastSeen = now; p.left = false; }
   switch (m.type) {
-    case 'join':
-      if (!net.host || (fromOpp && !net.oppLeft)) return;
-      if ((net.opp && !net.oppLeft) || state === 'play' || state === 'dying') { send('full', { to: m.from }, 1); return; }
-      if (m.from !== net.opp) net.wins = net.losses = 0;
-      net.opp = m.from; net.oppName = name; net.oppLeft = false; net.lastSeen = now;
-      lobbyStatus(`${name} đã vào phòng! Chuẩn bị...`);
+    case 'join': {
+      if (!net.host) return;
+      const ex = net.roster.find(q => q.id === m.from);
+      if (ex) { ex.name = name; sendRoster(); return; } // join gửi lặp lại cho tới khi thấy mình trong danh sách
+      if (net.roster.length >= MAX_PLAYERS) { send('full', { to: m.from }, 1); return; }
+      net.roster.push({ id: m.from, name });
       toast(`${name} đã vào phòng!`);
-      clearTimeout(net.startT); net.startT = setTimeout(sendStart, 900);
+      sendRoster();
       return;
-    case 'start':
-      // Chủ phòng cũng chờ tin "start" của chính mình quay về từ broker, để 2 bên bắt đầu gần như cùng lúc
-      if (m.from === myId) { if (m.round > net.played) beginVs(m); return; }
-      if (net.host) return;
-      if (m.guest !== myId) {
-        if (!net.opp) { stopJoin(); lobbyStatus('Phòng này đã đủ 2 người. Hãy tạo phòng mới nhé.', true); }
-        return;
-      }
-      if (m.round <= net.played) return;
-      net.opp = m.from; net.oppName = name; net.oppLeft = false; net.lastSeen = now;
-      beginVs(m);
+    }
+    case 'roster': {
+      if (net.host || !Array.isArray(m.list) || (net.hostId && m.from !== net.hostId)) return;
+      const list = m.list.filter(q => q && typeof q.id === 'string').slice(0, MAX_PLAYERS).map(q => ({ id: q.id, name: cleanName(q.name) }));
+      if (!list.some(q => q.id === myId)) return;
+      net.hostId = m.from; net.roster = list; net.hostPlaying = !!m.playing;
+      stopJoin();
+      renderRoster();
       return;
+    }
     case 'full':
-      if (m.to === myId && !net.opp) { stopJoin(); lobbyStatus('Phòng này đã đủ 2 người. Hãy tạo phòng mới nhé.', true); }
+      if (m.to === myId && !inRoster(myId)) { stopJoin(); lobbyStatus('Phòng này đã đủ 6 người. Hãy tạo phòng mới nhé.', true); }
       return;
+    case 'start': {
+      // Chủ phòng cũng chờ tin "start" của chính mình quay về từ broker, để mọi người bắt đầu gần như cùng lúc
+      const list = Array.isArray(m.players) ? m.players : [];
+      if (m.from !== myId && m.from !== net.hostId) return;
+      if (!list.some(q => q && q.id === myId) || !(m.round > net.played)) return;
+      beginVs(m, list);
+      return;
+    }
     case 'score':
-      if (!fromOpp || m.round !== net.played) return;
-      net.oppScore = cleanScore(m.score);
-      if (m.combo >= 3 && state === 'play') pop(`${name}: combo ${m.combo | 0}!`, W - 130 * S, 110 * S, '#6fe3ff', 22);
+      if (!p || m.round !== net.played) return;
+      p.score = cleanScore(m.score);
+      if (m.combo >= 3 && state === 'play') pop(`${p.name}: combo ${m.combo | 0}!`, W / 2, 130 * S, '#6fe3ff', 22);
       return;
     case 'final':
-      if (!fromOpp || m.round !== net.played) return;
-      net.oppFinal = net.oppScore = cleanScore(m.score);
-      if (net.myFinal !== null) finishVs();
-      return;
-    case 'rematch':
-      if (!fromOpp) return;
-      net.oppRematch = true;
-      updateVsOverStatus();
-      if (net.host && net.wantRematch) sendStart();
+      if (!p || m.round !== net.played) return;
+      p.final = p.score = cleanScore(m.score);
+      if (net.myFinal !== null) { if (allFinal()) finishVs(); else renderRank(); }
       return;
     case 'tr':
-      if (fromOpp && m.round === net.played && (state === 'play' || state === 'dying')) onGhost(m, now);
+      if (p && m.round === net.played && (state === 'play' || state === 'dying')) onGhost(p, m, now);
       return;
     case 'atk':
-      if (!fromOpp || m.round !== net.played || state !== 'play' || now < vsStart) return;
+      if (!p || m.to !== myId || m.round !== net.played || state !== 'play' || now < vsStart) return;
       if (m.kind === 'ink') {
         addInk(5);
-        pop(`${name} tặng bạn mực! Vuốt để lau 🦑`, W / 2, H * .4, '#ff9a8a', 24);
+        pop(`${p.name} tặng bạn mực! Vuốt để lau 🦑`, W / 2, H * .4, '#ff9a8a', 24);
       } else {
         for (let i = 0; i < 2; i++) spawnOne(makeThrow('bomb', 0, Math.random));
-        pop(`${name} ném 2 quả bom sang! 💣`, W / 2, H * .4, '#ff9a8a', 24);
+        pop(`${p.name} ném 2 quả bom sang! 💣`, W / 2, H * .4, '#ff9a8a', 24);
       }
       return;
     case 'leave':
-      if (!fromOpp || net.oppLeft) return;
-      net.oppLeft = true;
-      toast(`${net.oppName} đã rời phòng`);
-      if (net.myFinal !== null && !net.resultShown) finishVs(); else updateVsOverStatus();
+      if (net.host && inRoster(m.from)) { net.roster = net.roster.filter(q => q.id !== m.from); sendRoster(); }
+      if (!net.host && m.from === net.hostId && !net.hostLeft) {
+        net.hostLeft = true;
+        toast('Chủ phòng đã rời phòng');
+        lobbyStatus('Chủ phòng đã rời phòng. Hãy tạo phòng mới nhé.', true);
+      }
+      if (p && !p.left) {
+        p.left = true;
+        toast(`${p.name} đã rời phòng`);
+        if (net.myFinal !== null && !net.resultShown && allFinal()) finishVs(); else if (net.myFinal !== null) renderRank();
+      }
+      updateVsOverStatus();
       return;
   }
 }
 
-// Combo từ 4 quả: lần lượt tặng đối thủ mực che màn hình hoặc 2 quả bom
+// Combo từ 4 quả: lần lượt tặng mực hoặc 2 quả bom cho người đang dẫn đầu
 function sendAttack() {
+  let target = null;
+  for (const [id, p] of net.players) if (!p.left && (!target || p.score > target.p.score)) target = { id, p };
+  if (!target) return;
   const kind = (net.atkFlip = !net.atkFlip) ? 'ink' : 'bombs';
-  send('atk', { kind, round: net.played }, 1);
-  pop(kind === 'ink' ? `Đã tặng mực cho ${net.oppName}! 🦑` : `Đã ném 2 quả bom sang ${net.oppName}! 💣`, W / 2, H * .4, '#6fe3ff', 24);
+  send('atk', { kind, to: target.id, round: net.played }, 1);
+  pop(kind === 'ink' ? `Đã tặng mực cho ${target.p.name}! 🦑` : `Đã ném 2 quả bom sang ${target.p.name}! 💣`, W / 2, H * .4, '#6fe3ff', 24);
 }
 
 function sendStart() {
-  if (!net.host || !net.opp || net.oppLeft) return;
+  if (!net.host || net.roster.length < 2) return;
   net.round = Math.max(net.round, net.played) + 1;
-  send('start', { seed: Math.random() * 2147483647 | 0, round: net.round, guest: net.opp }, 1);
+  send('start', { seed: Math.random() * 2147483647 | 0, round: net.round, players: net.roster }, 1);
 }
 
-function beginVs(m) {
+function beginVs(m, list) {
   stopJoin(); clearTimeout(net.finalT);
+  const now = performance.now();
+  net.players = new Map();
+  for (const q of list.slice(0, MAX_PLAYERS)) {
+    if (q && typeof q.id === 'string' && q.id !== myId)
+      net.players.set(q.id, { name: cleanName(q.name), skin: 'classic', score: 0, final: null, left: false, lastSeen: now, ghost: [], ghostCuts: [] });
+  }
   Object.assign(net, {
-    played: m.round, oppScore: 0, oppFinal: null, myFinal: null, resultShown: false, wantRematch: false, oppRematch: false,
-    sentScore: -1, sentT: 0, comboOut: 0, lastBeep: -1, lastSeen: performance.now(),
-    out: [], outCuts: [], trSentT: 0, ghost: [], ghostCuts: [],
+    played: m.round, myFinal: null, resultShown: false, sentScore: -1, sentT: 0, comboOut: 0, lastBeep: -1,
+    out: [], outCuts: [], trSentT: 0,
   });
   rng = mulberry32(m.seed | 0);
-  vsStart = performance.now() + 3000;
+  vsStart = now + 3000;
   startGame('vs');
+  if (net.host) sendRoster(); // báo cho người vào sau biết phòng đang có trận
 }
 
 function netTick(now) {
@@ -1011,8 +1143,9 @@ function netTick(now) {
     send('score', { score, combo: net.comboOut, round: net.played });
     net.sentScore = score; net.sentT = now; net.comboOut = 0;
   }
-  // Gửi nét chém khoảng 15 lần/giây, thời gian tính tương đối so với điểm đầu tiên của gói
-  if ((net.out.length || net.outCuts.length) && now - net.trSentT > 66) {
+  // Gửi nét chém ~15 lần/giây (phòng đông thì thưa hơn), thời gian tính tương đối so với điểm đầu tiên của gói
+  const gap = net.players.size > 3 ? 120 : 66;
+  if ((net.out.length || net.outCuts.length) && now - net.trSentT > gap) {
     const t0 = Math.min(...net.out.map(q => q[2]), ...net.outCuts.map(q => q[2]));
     const r3 = v => Math.round(v * 1000) / 1000;
     send('tr', {
@@ -1024,80 +1157,171 @@ function netTick(now) {
   }
 }
 
-function onGhost(m, now) {
-  if (SKIN_BY_ID[m.s]) net.oppSkin = m.s;
+function onGhost(p, m, now) {
+  if (SKIN_BY_ID[m.s]) p.skin = m.s;
   const ok = q => Array.isArray(q) && isFinite(q[0]) && isFinite(q[1]) && isFinite(q[2]);
   const pts = (Array.isArray(m.p) ? m.p : []).filter(ok).slice(0, 200), cuts = (Array.isArray(m.c) ? m.c : []).filter(ok).slice(0, 50);
   let span = 0;
   for (const q of pts.concat(cuts)) span = Math.max(span, +q[2]);
   // phát lại trễ GHOST_DELAY để các gói nối nhau liền mạch
   const base = now + GHOST_DELAY - span;
-  for (const q of pts) net.ghost.push({ x: q[0] * W, y: q[1] * H, t: base + +q[2], b: q[3] ? 1 : 0 });
-  for (const q of cuts) net.ghostCuts.push({ x: q[0] * W, y: q[1] * H, t: base + +q[2] });
+  for (const q of pts) p.ghost.push({ x: q[0] * W, y: q[1] * H, t: base + +q[2], b: q[3] ? 1 : 0 });
+  for (const q of cuts) p.ghostCuts.push({ x: q[0] * W, y: q[1] * H, t: base + +q[2] });
+}
+
+function pruneGhosts(now) {
+  for (const p of net.players.values()) {
+    while (p.ghost.length && now - p.ghost[0].t > 500) p.ghost.shift();
+    while (p.ghostCuts.length && now - p.ghostCuts[0].t > 600) p.ghostCuts.shift();
+  }
+}
+
+// Bóng lưỡi dao của từng người chơi khác (đi chậm hơn thực tế ~0,1 giây để vệt mượt)
+function drawGhost(now) {
+  for (const p of net.players.values()) {
+    const sk = SKIN_BY_ID[p.skin] || SKINS[0];
+    for (const c of p.ghostCuts) {
+      const a = (now - c.t) / 500;
+      if (a < 0 || a > 1) continue;
+      ctx.strokeStyle = bladeColor(sk, 0, now, .7 * (1 - a)); ctx.lineWidth = 4 * S;
+      ctx.beginPath(); ctx.arc(c.x, c.y, (14 + 36 * a) * S, 0, TAU); ctx.stroke();
+    }
+    const vis = p.ghost.filter(q => q.t <= now);
+    if (!vis.length) continue;
+    drawBlade(vis, sk, now, .45, TRAIL_MS * 1.6, 13);
+    const tip = vis[vis.length - 1];
+    if (now - tip.t < 250) {
+      ctx.globalAlpha = .75;
+      text(p.name, tip.x + 14 * S, tip.y - 30 * S, Math.round(14 * S), '#6fe3ff');
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+const allFinal = () => [...net.players.values()].every(p => p.final !== null || p.left);
+
+function standings() {
+  const rows = [{ id: myId, name: myName, score: net.myFinal ?? score, me: true }];
+  for (const [id, p] of net.players) rows.push({ id, name: p.name, score: p.final ?? p.score, left: p.left, pending: p.final === null && !p.left });
+  rows.sort((a, b) => b.score - a.score);
+  for (const r of rows) r.rank = 1 + rows.filter(o => o.score > r.score).length;
+  return rows;
+}
+
+function renderRank() {
+  const ol = $('vsRank');
+  ol.textContent = '';
+  for (const r of standings()) {
+    const li = document.createElement('li');
+    if (r.me) li.className = 'me';
+    const a = document.createElement('span'), b = document.createElement('b');
+    a.textContent = `${['🥇', '🥈', '🥉'][r.rank - 1] || '#' + r.rank} ${r.name}${r.me ? ' (bạn)' : ''}${r.left ? ' (đã rời)' : ''}`;
+    b.textContent = r.pending && !net.resultShown ? `${r.score}…` : r.score;
+    li.append(a, b);
+    ol.appendChild(li);
+  }
 }
 
 function showVsOver() {
   net.myFinal = score;
   send('final', { score, round: net.played }, 1);
   $('vsTitle').textContent = 'Hết giờ! ⏰';
-  $('vsMeName').textContent = myName; $('vsMe').textContent = score;
-  $('vsOppName').textContent = net.oppName; $('vsOpp').textContent = net.oppScore;
   $('vsTally').textContent = '';
-  $('btnRematch').disabled = true; $('btnVsInvite').classList.add('hidden');
-  vsStatus(`Đang chờ kết quả của ${net.oppName}...`);
+  $('btnRematch').classList.add('hidden'); $('btnVsInvite').classList.add('hidden');
+  vsStatus('Đang chờ kết quả của mọi người...');
+  renderRank();
   $('vsOver').classList.remove('hidden');
-  if (net.oppFinal !== null || net.oppLeft) finishVs();
-  else net.finalT = setTimeout(finishVs, 6000); // không nhận được kết quả cuối thì dùng điểm gần nhất
+  if (allFinal()) finishVs();
+  else net.finalT = setTimeout(finishVs, 6000); // ai không gửi kết quả cuối thì dùng điểm gần nhất
 }
 
 function finishVs() {
   if (net.myFinal === null || net.resultShown) return;
   clearTimeout(net.finalT);
   net.resultShown = true;
-  const me = net.myFinal, op = net.oppFinal !== null ? net.oppFinal : net.oppScore;
-  $('vsOpp').textContent = op;
-  if (me > op) {
+  const rows = standings(), me = rows.find(r => r.me), n = rows.length;
+  const tied = rows.filter(r => r.rank === me.rank).length > 1;
+  renderRank();
+  if (me.rank === 1 && !tied) {
     net.wins++; stats.wins++; saveStats(); checkUnlocks();
-    $('vsTitle').textContent = 'Bạn thắng! 🏆'; sfx.combo(5);
+    $('vsTitle').textContent = n === 2 ? 'Bạn thắng! 🏆' : 'Bạn về nhất! 🏆';
+    sfx.combo(5);
+  } else if (me.rank === 1) {
+    $('vsTitle').textContent = n === 2 ? 'Hòa! 🤝' : 'Đồng hạng nhất! 🤝';
+  } else {
+    $('vsTitle').textContent = n === 2 ? 'Bạn thua rồi 😢' : `Bạn về hạng ${me.rank}/${n}`;
+    sfx.miss();
   }
-  else if (me < op) { net.losses++; $('vsTitle').textContent = 'Bạn thua rồi 😢'; sfx.miss(); }
-  else $('vsTitle').textContent = 'Hòa! 🤝';
-  $('vsTally').textContent = `Tỉ số: ${myName} ${net.wins} – ${net.losses} ${net.oppName}`;
+  $('vsTally').textContent = `Số trận về nhất trong phòng này: ${net.wins}`;
   updateVsOverStatus();
 }
 
 function updateVsOverStatus() {
   if (!net.resultShown) return;
-  const btn = $('btnRematch');
-  $('btnVsInvite').classList.toggle('hidden', !(net.host && net.oppLeft));
-  if (net.oppLeft) {
-    btn.disabled = true; btn.textContent = 'Đấu lại';
-    vsStatus(net.host ? `${net.oppName} đã rời phòng. Mời người khác vào là trận mới tự bắt đầu.` : `${net.oppName} đã rời phòng.`);
-    return;
+  const btn = $('btnRematch'), n = net.roster.length;
+  btn.classList.toggle('hidden', !net.host);
+  $('btnVsInvite').classList.toggle('hidden', !net.host || n >= MAX_PLAYERS);
+  if (net.host) {
+    btn.disabled = n < 2;
+    btn.textContent = 'Trận mới';
+    vsStatus(n < 2 ? 'Mọi người đã rời phòng. Mời thêm người để chơi tiếp.' : `Trong phòng (${n}): ${net.roster.map(q => q.name).join(', ')}`);
+  } else {
+    vsStatus(net.hostLeft ? 'Chủ phòng đã rời phòng.' : `Chờ chủ phòng bắt đầu trận mới... (${n} người trong phòng)`);
   }
-  btn.disabled = net.wantRematch;
-  btn.textContent = net.oppRematch ? 'Đồng ý đấu lại' : 'Đấu lại';
-  vsStatus(net.wantRematch ? `Đang chờ ${net.oppName} đồng ý...` : net.oppRematch ? `${net.oppName} muốn đấu lại!` : '');
+}
+
+function renderRoster() {
+  const ul = $('roster');
+  ul.textContent = '';
+  const hostId = net.host ? myId : net.hostId;
+  for (const q of net.roster) {
+    const li = document.createElement('li');
+    li.textContent = `${q.id === hostId ? '👑 ' : ''}${q.name}${q.id === myId ? ' (bạn)' : ''}`;
+    ul.appendChild(li);
+  }
+  const n = net.roster.length, btn = $('btnStart');
+  btn.classList.toggle('hidden', !net.host);
+  btn.disabled = n < 2;
+  btn.textContent = n < 2 ? 'Bắt đầu (cần ít nhất 2 người)' : `Bắt đầu (${n} người)`;
+  if (net.host) {
+    lobbyStatus(n < 2 ? 'Đang chờ người chơi... Gửi link hoặc mã phòng cho bạn bè nhé!'
+      : n >= MAX_PLAYERS ? 'Phòng đã đủ 6 người. Bấm Bắt đầu nhé!' : 'Bấm Bắt đầu khi mọi người đã vào (tối đa 6 người).');
+  } else if (inRoster(myId) && !net.hostLeft) {
+    lobbyStatus(net.hostPlaying ? 'Phòng đang có trận — bạn sẽ vào trận sau.' : 'Đã vào phòng! Chờ chủ phòng bấm Bắt đầu...');
+  }
+  updateVsOverStatus();
 }
 
 function drawVsHud(now) {
-  const m = 16, top = 14, lost = net.oppLeft || now - net.lastSeen > 7000;
+  const m = 16, top = 14;
+  const others = [...net.players.values()].sort((a, b) => b.score - a.score);
   text(myName, m + 2, top, Math.round(15 * S), '#fff');
   text(String(score), m, top + 20 * S, Math.round(44 * S), '#ffd23f');
   drawFxHud(m + 2, top + 70 * S);
-  text(lost ? `${net.oppName} (mất kết nối)` : net.oppName, W - m - 2, top, Math.round(15 * S), lost ? '#ff9a8a' : '#fff', 'right');
-  text(String(net.oppScore), W - m, top + 20 * S, Math.round(44 * S), '#6fe3ff', 'right');
   const sec = Math.ceil(timeLeft);
   text(String(sec), W / 2, top, Math.round(34 * S), sec <= 10 ? '#ff6a5a' : '#fff', 'center');
-  // Thanh so điểm: vàng là mình, xanh là đối thủ
-  const bw = Math.min(260, W * .34), bx = W / 2 - bw / 2, by = top + 44 * S, tot = score + net.oppScore, f = tot ? score / tot : .5;
-  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 12);
-  ctx.fillStyle = '#ffd23f'; ctx.fillRect(bx, by, bw * f, 8);
-  ctx.fillStyle = '#6fe3ff'; ctx.fillRect(bx + bw * f, by, bw * (1 - f), 8);
+  if (others.length === 1) {
+    // 2 người: tên + điểm to bên phải, thanh so điểm ở giữa (vàng là mình, xanh là đối thủ)
+    const o = others[0], lost = o.left || now - o.lastSeen > 7000;
+    text(lost ? `${o.name} (mất kết nối)` : o.name, W - m - 2, top, Math.round(15 * S), lost ? '#ff9a8a' : '#fff', 'right');
+    text(String(o.score), W - m, top + 20 * S, Math.round(44 * S), '#6fe3ff', 'right');
+    const bw = Math.min(260, W * .34), bx = W / 2 - bw / 2, by = top + 44 * S, tot = score + o.score, f = tot ? score / tot : .5;
+    ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 12);
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(bx, by, bw * f, 8);
+    ctx.fillStyle = '#6fe3ff'; ctx.fillRect(bx + bw * f, by, bw * (1 - f), 8);
+  } else {
+    // nhiều người: bảng điểm nhỏ bên phải, hạng của mình ở giữa
+    const rank = 1 + others.filter(o => o.score > score).length;
+    text(`Hạng ${rank}/${others.length + 1}`, W / 2, top + 40 * S, Math.round(17 * S), rank === 1 ? '#ffd23f' : '#fff', 'center');
+    others.forEach((o, i) => {
+      const lost = o.left || now - o.lastSeen > 7000;
+      text(`${i === 0 && o.score > score ? '👑 ' : ''}${o.name}${lost ? ' ⚠' : ''}  ${o.score}`, W - m - 2, top + i * 22 * S, Math.round(16 * S), lost ? '#ff9a8a' : '#6fe3ff', 'right');
+    });
+  }
   if (state !== 'play') return;
   if (now < vsStart) {
     text(String(Math.ceil((vsStart - now) / 1000)), W / 2, H / 2 - 80 * S, Math.round(140 * S), '#fff', 'center');
-    text(`${myName}  vs  ${net.oppName}`, W / 2, H / 2 + 80 * S, Math.round(24 * S), '#ffd23f', 'center');
+    text(others.length === 1 ? `${myName}  vs  ${others[0].name}` : `${others.length + 1} người đấu nhau!`, W / 2, H / 2 + 80 * S, Math.round(24 * S), '#ffd23f', 'center');
   } else if (now < vsStart + 700) {
     text('Chém!', W / 2, H / 2 - 60 * S, Math.round(110 * S), '#ffd23f', 'center');
   }
@@ -1126,6 +1350,8 @@ function showRoom(code, host) {
   $('roomCode').textContent = code || '…';
   $('roomLink').textContent = '';
   $('btnInvite').classList.add('hidden');
+  $('btnStart').classList.add('hidden');
+  $('roster').textContent = '';
   net.host = host;
 }
 
@@ -1139,10 +1365,12 @@ async function createRoom() {
     try { await connectRoom(code, tok); } catch (e) { if (tok !== net.session) return; continue; }
     if (tok !== net.session) return;
     afterConnect();
+    net.hostId = myId;
+    net.roster = [{ id: myId, name: myName }];
     $('roomCode').textContent = code;
     $('roomLink').textContent = roomLink();
     $('btnInvite').classList.remove('hidden');
-    lobbyStatus('Đang chờ đối thủ... Gửi link hoặc mã phòng cho bạn bè nhé!');
+    renderRoster();
     return;
   }
   lobbyStatus('Không kết nối được máy chủ đối kháng. Kiểm tra mạng rồi thử lại.', true);
@@ -1179,14 +1407,17 @@ function leaveRoom() {
     const c = net.client;
     setTimeout(() => c.end(), 300);
   }
-  clearInterval(net.ping); stopJoin(); clearTimeout(net.startT); clearTimeout(net.finalT);
-  Object.assign(net, { client: null, room: '', host: false, opp: null, oppLeft: false, round: 0, played: 0, wins: 0, losses: 0, resultShown: false });
+  clearInterval(net.ping); stopJoin(); clearTimeout(net.finalT);
+  Object.assign(net, {
+    client: null, room: '', host: false, hostId: null, hostLeft: false, hostPlaying: false,
+    roster: [], seen: new Map(), players: new Map(), round: 0, played: 0, wins: 0, resultShown: false,
+  });
   rng = Math.random;
   if (location.search) history.replaceState(null, '', location.pathname);
 }
 
 async function invite() {
-  const url = roomLink(), msg = `${myName} thách bạn đấu Chém Trái Cây 🍉🔪 Mã phòng ${net.room}:`;
+  const url = roomLink(), msg = `${myName} rủ bạn đấu Chém Trái Cây 🍉🔪 Mã phòng ${net.room}:`;
   if (navigator.share) {
     try { await navigator.share({ title: 'Chém Trái Cây — Đối kháng', text: msg, url }); return; }
     catch (e) { if (e.name === 'AbortError') return; }
@@ -1204,16 +1435,111 @@ $('btnLeave').onclick = () => { leaveRoom(); toMenu(); };
 $('btnInvite').onclick = invite;
 $('btnVsInvite').onclick = invite;
 $('btnVsLeave').onclick = () => { leaveRoom(); toMenu(); };
-$('btnRematch').onclick = () => {
-  net.wantRematch = true;
-  send('rematch', {}, 1);
-  updateVsOverStatus();
-  if (net.host && net.oppRematch) sendStart();
-};
+$('btnStart').onclick = sendStart;
+$('btnRematch').onclick = sendStart;
 addEventListener('pagehide', () => { if (net.client) send('leave'); });
 
 const invitedCode = new URLSearchParams(location.search).get('phong');
 if (invitedCode) openLobby(invitedCode.toUpperCase().slice(0, 6));
+
+// ---------- Bảng xếp hạng chung (API trên Vercel) ----------
+const LB_API = 'https://traicay-api.vercel.app/api/lb';
+const LB_MODES = ['classic', 'arcade'];
+let playerId = load('ctc_pid', '');
+if (!/^[a-z0-9]{12,32}$/.test(playerId)) {
+  playerId = (Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).replace(/[^a-z0-9]/g, '').slice(0, 16);
+  store('ctc_pid', playerId);
+}
+// Cùng cách băm với server, để nhận ra dòng của mình trên bảng mà server không phải lộ id thật
+function hashId(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+const myHash = hashId(playerId);
+let lbBoard = null, lbMode = 'classic';
+
+async function lbPost(m, s) {
+  const body = JSON.stringify({ id: playerId, name: myName, mode: m, score: s });
+  for (let i = 0; i < 2; i++) {
+    try {
+      const r = await fetch(LB_API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body });
+      if (r.ok) { const d = await r.json(); lbBoard = d.board; return d; }
+    } catch (e) {}
+    await new Promise(r => setTimeout(r, 1200));
+  }
+  throw new Error('lb');
+}
+
+// Gửi kỷ lục của chế độ này nếu chưa từng gửi (gửi lỗi thì ván sau tự gửi lại)
+async function submitBest(m) {
+  const el = $('overRank'), best = getBest(m), sent = load('ctc_sent_' + m, 0);
+  if (best <= 0) { el.textContent = ''; return; }
+  if (best <= sent) { el.textContent = 'Vào Bảng xếp hạng để so tài với mọi người!'; return; }
+  el.textContent = 'Đang gửi kỷ lục lên bảng xếp hạng chung...';
+  try {
+    const d = await lbPost(m, best);
+    store('ctc_sent_' + m, best);
+    el.textContent = d.rank ? `🏆 Kỷ lục ${best} điểm đứng hạng #${d.rank} bảng xếp hạng chung!` : `Kỷ lục ${best} điểm chưa vào top 50 (cần ${d.need} điểm).`;
+  } catch (e) {
+    el.textContent = 'Chưa gửi được điểm (lỗi mạng), ván sau sẽ tự gửi lại.';
+  }
+}
+
+async function openLb() {
+  for (const id of ['menu', 'over']) $(id).classList.add('hidden');
+  $('lb').classList.remove('hidden');
+  $('lbName').value = myName;
+  renderLb();
+  $('lbStatus').textContent = 'Đang tải...';
+  try {
+    const r = await fetch(LB_API);
+    lbBoard = await r.json();
+    $('lbStatus').textContent = '';
+  } catch (e) {
+    $('lbStatus').textContent = 'Không tải được bảng xếp hạng (lỗi mạng).';
+  }
+  renderLb();
+}
+
+function renderLb() {
+  for (const m of LB_MODES) $('lbTab_' + m).classList.toggle('on', m === lbMode);
+  const ol = $('lbList'), list = (lbBoard && lbBoard[lbMode]) || [];
+  ol.textContent = '';
+  if (lbBoard && !list.length) {
+    const li = document.createElement('li');
+    li.textContent = 'Chưa có ai — hãy là người đầu tiên!';
+    ol.appendChild(li);
+  }
+  list.forEach((e, i) => {
+    const li = document.createElement('li');
+    if (e.h === myHash) li.className = 'me';
+    const a = document.createElement('span'), b = document.createElement('b');
+    a.textContent = `${['🥇', '🥈', '🥉'][i] || '#' + (i + 1)} ${e.name}`;
+    b.textContent = e.score;
+    li.append(a, b);
+    ol.appendChild(li);
+  });
+  const mine = list.findIndex(e => e.h === myHash), best = getBest(lbMode);
+  $('lbMine').textContent = mine >= 0 ? `Bạn đang đứng hạng #${mine + 1} với ${list[mine].score} điểm`
+    : best ? `Kỷ lục của bạn: ${best} điểm${list.length >= 50 ? ' — chưa vào top 50' : ''}` : 'Chơi một ván để có tên trên bảng nhé!';
+}
+
+async function renameLb() {
+  const v = $('lbName').value.trim().slice(0, 14);
+  if (!v) return;
+  myName = v;
+  store('ctc_name', v);
+  const jobs = LB_MODES.filter(m => load('ctc_sent_' + m, 0) > 0).map(m => lbPost(m, load('ctc_sent_' + m, 0)));
+  try { await Promise.all(jobs); toast('Đã đổi tên!'); } catch (e) { toast('Đã đổi tên trên máy, chưa cập nhật được bảng (lỗi mạng).'); }
+  renderLb();
+}
+
+$('btnLb').onclick = openLb;
+$('btnOverLb').onclick = () => { lbMode = mode === 'arcade' ? 'arcade' : 'classic'; openLb(); };
+$('lbBack').onclick = () => toMenu();
+$('lbRename').onclick = renameLb;
+for (const m of LB_MODES) $('lbTab_' + m).onclick = () => { lbMode = m; renderLb(); };
 
 // ---------- Vòng lặp ----------
 function update(dt, now) {
@@ -1286,8 +1612,7 @@ function update(dt, now) {
   }
   for (let i = splats.length - 1; i >= 0; i--) if ((splats[i].life -= dt) <= 0) splats.splice(i, 1);
   for (let i = inks.length - 1; i >= 0; i--) if ((inks[i].life -= dt) <= 0) inks.splice(i, 1);
-  while (net.ghost.length && now - net.ghost[0].t > 500) net.ghost.shift();
-  while (net.ghostCuts.length && now - net.ghostCuts[0].t > 600) net.ghostCuts.shift();
+  pruneGhosts(now);
   for (let i = pops.length - 1; i >= 0; i--) { const p = pops[i]; p.life -= dt; p.y -= 40 * S * dt; if (p.life <= 0) pops.splice(i, 1); }
 
   if (combo.n > 0) {
@@ -1333,26 +1658,6 @@ function drawBlade(pts, sk, now, alpha, life, glowW) {
     }
   }
   ctx.globalAlpha = 1;
-}
-
-// Bóng lưỡi dao của đối thủ (đi chậm hơn thực tế ~0,1 giây để vệt mượt)
-function drawGhost(now) {
-  const sk = SKIN_BY_ID[net.oppSkin] || SKINS[0];
-  for (const c of net.ghostCuts) {
-    const a = (now - c.t) / 500;
-    if (a < 0 || a > 1) continue;
-    ctx.strokeStyle = bladeColor(sk, 0, now, .7 * (1 - a)); ctx.lineWidth = 4 * S;
-    ctx.beginPath(); ctx.arc(c.x, c.y, (14 + 36 * a) * S, 0, TAU); ctx.stroke();
-  }
-  const vis = net.ghost.filter(p => p.t <= now);
-  if (!vis.length) return;
-  drawBlade(vis, sk, now, .45, TRAIL_MS * 1.6, 13);
-  const tip = vis[vis.length - 1];
-  if (now - tip.t < 250) {
-    ctx.globalAlpha = .75;
-    text(net.oppName, tip.x + 14 * S, tip.y - 30 * S, Math.round(14 * S), '#6fe3ff');
-    ctx.globalAlpha = 1;
-  }
 }
 
 function edgeGlow(rgb, a) {
@@ -1473,6 +1778,8 @@ function render(now) {
     if (mode === 'classic') {
       const hs = 30 * S;
       for (let i = 0; i < 3; i++) heart(W - m - hs * .55 - i * hs * 1.2, top + 4, hs, i < lives);
+      if (shield) text('🛡', W - m - hs * 3.6 - 6, top + 2, Math.round(28 * S), '#9fe8ff', 'right');
+      text(`Cấp ${level}`, W - m, top + 40 * S, Math.round(18 * S), '#ffd23f', 'right');
     } else {
       const sec = Math.ceil(timeLeft);
       text(`⏱ ${sec}`, W - m, top, Math.round(40 * S), sec <= 10 ? '#ff6a5a' : '#fff', 'right');

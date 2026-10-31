@@ -1,0 +1,8 @@
+{
+  "name": "traicay-api",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vercel/blob": "2.8.1"
+  }
+}
