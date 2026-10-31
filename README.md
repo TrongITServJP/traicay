@@ -10,6 +10,7 @@ Game chém trái cây chạy ngay trên trình duyệt — máy tính và điệ
 - Tránh **bom** 💣.
 - **Chuỗi lửa 🔥:** chém liên tục không để rơi quả nào — từ 12 quả điểm x2, từ 30 quả điểm x3.
 - **Nhân vật:** đứng dưới đáy màn hình; khi bạn vuốt, nhân vật bay bám theo đầu lưỡi dao và vung vũ khí theo từng nhát chém, thả tay thì rơi về đất (tắt được trong Tủ đồ).
+- **Pet 🐥:** bay cạnh nhân vật và tự chém phụ, mỗi loại một kiểu (xem bảng Pet).
 - **Mana & tuyệt chiêu ⚡:** chém trái cây để nạp mana (trúng bom bị trừ). Đầy thanh thì bấm nút ⚡ hoặc phím **Space** để tung tuyệt chiêu đã chọn — mỗi chiêu kéo dài 5 giây.
 
 ### Tuyệt chiêu
@@ -21,6 +22,26 @@ Game chém trái cây chạy ngay trên trình duyệt — máy tính và điệ
 | ❄️ Băng Phong | Đóng băng mọi thứ trên màn hình, bom băng vô hại |
 | ☃️ Bão Tuyết | Bão tuyết: thời gian chậm hẳn, bom hóa thành cầu tuyết |
 | 🐉 Chưởng Rồng | Rồng vàng lượn khắp màn hình, phun lửa chém sạch trái cây |
+| ⚡ Lôi Thần | Sấm sét liên tục giáng xuống từng quả và cả bom |
+| 🌸 Anh Đào Kiếm Vũ | Bão hoa anh đào, mỗi cơn gió hoa là một nhát chém chéo |
+| ☄️ Thiên Thạch | Mưa thiên thạch nổ tung quanh chỗ rơi |
+| 🌊 Thủy Long Ba | Sóng thần cuốn qua rồi cuốn lại |
+| 🌀 Hắc Động | Hố đen giữa màn hình hút mọi thứ vào nghiền nát |
+| 👥 Phân Thân | 4 phân thân bóng tối lao đi chém trái cây |
+
+### Pet
+| Pet | Kiểu chém phụ |
+|---|---|
+| Gà con | Cứ 3 giây lao tới mổ một quả |
+| Thỏ | Mổ liên tục, cứ 1,6 giây một quả |
+| Cún | Đớp những quả sắp rơi khỏi màn hình |
+| Ếch | Phóng lưỡi bắt quả ở xa |
+| Cú mèo | Lượn một đường chém liền 3 quả |
+| Vẹt | Phóng lông vũ xuyên liền 3 quả |
+| Khỉ | Ném chuối trúng 2 quả |
+| Gấu trúc | Dậm đất tạo sóng chém mọi quả xung quanh |
+| Cánh cụt | Biến bom thành cầu tuyết vô hại |
+| Kỳ lân biển | Húc sừng xuyên qua cả hàng trái cây |
 
 ### Trái đặc biệt
 | Trái | Hiệu ứng |
@@ -41,11 +62,13 @@ Game chém trái cây chạy ngay trên trình duyệt — máy tính và điệ
 Hết mỗi ván Cổ điển / 60 giây, kỷ lục của bạn tự gửi lên **bảng xếp hạng chung** (top 50 mỗi chế độ). Xem trong menu **🏆 Bảng xếp hạng**, đổi tên hiển thị ngay tại đó.
 
 ### Tủ đồ 🎒
-Mở khóa bằng thành tích, chọn trong menu **🎒 Tủ đồ**:
+66 món, mở khóa bằng thành tích, chọn trong menu **🎒 Tủ đồ**:
 - **Nhân vật (6):** Chàng phiêu lưu, Cô phiêu lưu (chém 100 quả), Anh chàng (combo 5), Cô nàng (thắng 2 trận đối kháng), Rô-bốt (150 điểm/ván), Thây ma (cấp 6 Cổ điển).
-- **Vũ khí (6):** Dao bếp, Rìu (combo 4), Búa (cấp 4 Cổ điển), Chảo (thắng 1 trận đối kháng), Kiếm dài (chém 300 quả), Kiếm ánh sáng (chuỗi 40).
-- **Tuyệt chiêu (6):** Hỏa Luân, Cuồng Phong có sẵn; Vạn Kiếm (chém 150 quả), Băng Phong (3 quả băng), Bão Tuyết (cấp 3 Cổ điển), Chưởng Rồng (200 điểm/ván).
-- **Vệt chém (9):** Cổ điển, Lá chuối (chém 200 quả), Lửa (100 điểm/ván), Băng giá (5 quả băng), Sấm sét (combo 6), Sầu riêng vàng (3 sầu riêng), Hoa đào (250 điểm/ván), Cầu vồng (chuỗi 50), Bóng đêm (thắng 5 trận đối kháng).
+- **Mũ (9):** Không đội, Nón lá, Mũ sinh nhật, Băng đô ninja, Tai thỏ, Mũ phù thủy, Vương miện, Sừng quỷ, Hào quang.
+- **Vũ khí (13):** Dao bếp, Rìu, Búa, Chảo, Kiếm dài, Kiếm ánh sáng, Xẻng lật, Cán bột, Cưa, Cuốc chim, Kiếm ánh sáng đỏ, Hỏa kiếm, Băng kiếm.
+- **Pet (10):** Gà con, Thỏ, Cún, Ếch, Cú mèo, Vẹt, Khỉ, Gấu trúc, Cánh cụt, Kỳ lân biển.
+- **Tuyệt chiêu (12):** Hỏa Luân, Cuồng Phong, Vạn Kiếm, Băng Phong, Bão Tuyết, Chưởng Rồng, Lôi Thần, Anh Đào Kiếm Vũ, Thiên Thạch, Thủy Long Ba, Hắc Động, Phân Thân.
+- **Vệt chém (15):** Ngân hà, Kẹo ngọt, Độc dược, Điện tím, Đại dương, Hoàng hôn, Cổ điển, Lá chuối (chém 200 quả), Lửa (100 điểm/ván), Băng giá (5 quả băng), Sấm sét (combo 6), Sầu riêng vàng (3 sầu riêng), Hoa đào (250 điểm/ván), Cầu vồng (chuỗi 50), Bóng đêm (thắng 5 trận đối kháng).
 
 ## Kỹ thuật
 Game là một file `index.html` (HTML5 Canvas + Web Audio) cùng thư mục `assets/`, không cần build, chạy trên GitHub Pages.
