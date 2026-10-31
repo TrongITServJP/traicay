@@ -44,6 +44,25 @@
   #pauseBtn:active { transform: translateX(-50%) translateY(2px); }
   #toast { position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%); background: rgba(0,0,0,.8); color: #fff;
     padding: 10px 18px; border-radius: 999px; font-size: 15px; z-index: 10; pointer-events: none; transition: opacity .3s; }
+  button.vs { background: linear-gradient(180deg, #8fe9ff, #2fa8e0); box-shadow: 0 5px 0 #13648c, 0 10px 20px rgba(0,0,0,.35); color: #062c40; }
+  button:disabled { opacity: .5; cursor: default; }
+  input { font: inherit; font-size: 18px; font-weight: 700; padding: 12px 16px; border-radius: 14px; width: 210px; max-width: 70vw;
+    border: 2px solid rgba(255,255,255,.35); background: rgba(0,0,0,.4); color: #fff; outline: none; text-align: center;
+    user-select: text; -webkit-user-select: text; box-sizing: border-box; }
+  input:focus { border-color: #ffd23f; }
+  #codeIn { text-transform: uppercase; letter-spacing: 3px; width: 170px; }
+  .field { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 14px; }
+  .stack { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .code { font-size: clamp(44px, 12vw, 72px); font-weight: 900; letter-spacing: 8px; color: #ffd23f; line-height: 1;
+    text-shadow: 0 4px 0 #7a3b00, 0 8px 20px rgba(0,0,0,.5); }
+  .link { font-size: 13px; opacity: .75; word-break: break-all; user-select: text; -webkit-user-select: text; max-width: 90vw; }
+  .status { min-height: 1.4em; margin: 0; font-size: 16px; max-width: 460px; line-height: 1.4; }
+  .status.err { color: #ff9a8a; }
+  .vsScores { display: flex; align-items: center; gap: 22px; }
+  .vsScores > div { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 15px; max-width: 38vw; overflow-wrap: anywhere; }
+  .vsScores b { font-size: clamp(48px, 13vw, 84px); line-height: 1; color: #ffd23f; text-shadow: 0 4px 0 #7a3b00; }
+  .vsScores > div:last-child b { color: #6fe3ff; text-shadow: 0 4px 0 #13648c; }
+  .vsMark { font-weight: 900; font-size: 22px; opacity: .7; }
 </style>
 </head>
 <body>
@@ -55,6 +74,7 @@
   <div class="row" style="margin-top:10px">
     <button id="btnClassic">Cổ điển<small>3 mạng, càng chơi càng khó</small></button>
     <button id="btnArcade" class="alt">Tốc độ 60 giây<small>Chém càng nhiều càng tốt</small></button>
+    <button id="btnVs" class="vs">Đối kháng 2 người<small>Đấu online với bạn bè</small></button>
   </div>
   <div class="best" id="menuBest"></div>
   <div class="tips">Máy tính: giữ chuột trái rồi kéo. Điện thoại: vuốt ngón tay.<br>Chém 3 quả trở lên trong một nhát để ăn combo. Để rơi trái cây ở chế độ Cổ điển sẽ mất mạng.</div>
@@ -69,6 +89,42 @@
     <button id="btnAgain">Chơi lại</button>
     <button id="btnShare" class="alt">Thách bạn bè</button>
     <button id="btnMenu" class="ghost">Menu</button>
+  </div>
+</div>
+
+<div id="lobby" class="overlay hidden">
+  <h2>Đối kháng 2 người</h2>
+  <div id="lobbyHome" class="stack">
+    <p id="invited" class="sub hidden">Bạn được mời vào một trận đối kháng! ⚔️</p>
+    <label class="field">Tên của bạn<input id="nameIn" maxlength="14" autocomplete="nickname"></label>
+    <div class="row" id="createRow"><button id="btnCreate">Tạo phòng mới</button></div>
+    <div class="row"><input id="codeIn" placeholder="Mã phòng" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false"><button id="btnJoin" class="alt">Vào phòng</button></div>
+    <button id="btnLobbyBack" class="ghost">Quay lại</button>
+    <div class="tips">Hai người nhận cùng một loạt trái cây trong 60 giây, ai nhiều điểm hơn thì thắng. Trúng bom bị trừ 10 điểm.</div>
+  </div>
+  <div id="lobbyRoom" class="stack hidden">
+    <p class="sub">Mã phòng</p>
+    <div class="code" id="roomCode">…</div>
+    <div class="link" id="roomLink"></div>
+    <button id="btnInvite" class="alt">Gửi link mời bạn</button>
+    <p class="status" id="lobbyStatus"></p>
+    <button id="btnLeave" class="ghost">Rời phòng</button>
+  </div>
+</div>
+
+<div id="vsOver" class="overlay hidden">
+  <h2 id="vsTitle">Hết giờ!</h2>
+  <div class="vsScores">
+    <div><span id="vsMeName">Bạn</span><b id="vsMe">0</b></div>
+    <span class="vsMark">VS</span>
+    <div><span id="vsOppName">Đối thủ</span><b id="vsOpp">0</b></div>
+  </div>
+  <div class="best" id="vsTally"></div>
+  <p class="status" id="vsStatus"></p>
+  <div class="row">
+    <button id="btnRematch">Đấu lại</button>
+    <button id="btnVsInvite" class="alt hidden">Mời người khác</button>
+    <button id="btnVsLeave" class="ghost">Rời phòng</button>
   </div>
 </div>
 
@@ -301,7 +357,7 @@ const sfx = {
 
 // ---------- Trạng thái ----------
 let state = 'menu', mode = 'classic', paused = false;
-let score = 0, lives = 3, timeLeft = 60, elapsed = 0, spawnT = 0, dieT = 0, overReason = '', menuSpawnT = 0;
+let score = 0, lives = 3, timeLeft = 60, elapsed = 0, nextWave = 0, dieT = 0, overReason = '', menuSpawnT = 0;
 let fruits = [], pieces = [], parts = [], splats = [], pops = [], queue = [], trail = [];
 let flash = 0, shake = 0, down = false;
 const combo = { n: 0, t: 0, x: 0, y: 0 };
@@ -317,36 +373,55 @@ function refreshMenuBest() {
 }
 refreshMenuBest();
 
-function spawnOne(bomb) {
-  const x = rand(W * .12, W * .88), y = H + 60 * S;
-  const h = rand(.45, .82) * H, vy = -Math.sqrt(2 * G * h);
-  const T = 2 * Math.sqrt(2 * h / G), vx = (rand(W * .2, W * .8) - x) / T;
-  const t = bomb ? null : pick(TYPES);
-  fruits.push({ t, bomb, x, y, vx, vy, r: (bomb ? 34 : t.r) * S, rot: rand(0, TAU), vr: rand(-3, 3), seeds: t ? makeSeeds(t) : null, dead: false });
+// Chế độ đối kháng thay rng bằng bộ sinh có seed để 2 máy ra cùng một loạt trái cây
+let rng = Math.random;
+function mulberry32(a) {
+  return () => {
+    a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// Bốc thăm trước mọi thông số của một lần ném (tỉ lệ theo màn hình), d = thời điểm ném tính theo giây của trận
+function makeThrow(bomb, d) {
+  return { d, bomb, type: rng() * TYPES.length | 0, xf: rng(), hf: rng(), tf: rng() };
+}
+
+function spawnOne(o) {
+  const x = W * (.12 + .76 * o.xf), y = H + 60 * S;
+  const h = (.45 + .37 * o.hf) * H, vy = -Math.sqrt(2 * G * h);
+  const T = 2 * Math.sqrt(2 * h / G), vx = (W * (.2 + .6 * o.tf) - x) / T;
+  const t = o.bomb ? null : TYPES[o.type];
+  fruits.push({ t, bomb: o.bomb, x, y, vx, vy, r: (o.bomb ? 34 : t.r) * S, rot: rand(0, TAU), vr: rand(-3, 3), seeds: t ? makeSeeds(t) : null, dead: false });
   sfx.toss();
 }
 
-function spawnWave() {
-  const arcade = mode === 'arcade', lvl = Math.min(1, elapsed / (arcade ? 50 : 120));
-  const n = 1 + Math.floor(Math.random() * (1 + (arcade ? 4 : 3) * lvl + (arcade ? 1.5 : 0)));
-  const bombP = elapsed < 4 ? 0 : arcade ? .1 + .1 * lvl : .05 + .17 * lvl;
-  const salvo = Math.random() < .35;
+function spawnWave(at) {
+  const arcade = mode !== 'classic', lvl = Math.min(1, at / (arcade ? 50 : 120));
+  const n = 1 + Math.floor(rng() * (1 + (arcade ? 4 : 3) * lvl + (arcade ? 1.5 : 0)));
+  const bombP = at < 4 ? 0 : arcade ? .1 + .1 * lvl : .05 + .17 * lvl;
+  const salvo = rng() < .35;
   let bombs = 0;
   for (let i = 0; i < n; i++) {
-    let bomb = Math.random() < bombP && bombs < 2 && (i > 0 || n === 1);
-    if (n === 1 && bomb && Math.random() < .5) bomb = false;
+    let bomb = rng() < bombP && bombs < 2 && (i > 0 || n === 1);
+    if (n === 1 && bomb && rng() < .5) bomb = false;
     if (bomb) bombs++;
-    queue.push({ d: salvo ? i * .16 : rand(0, .1), bomb });
+    queue.push(makeThrow(bomb, at + (salvo ? i * .16 : rng() * .1)));
   }
 }
+
+const waveGap = at => mode === 'classic' ? Math.max(.75, 2.1 - at * .012) : Math.max(.55, 1.25 - at * .012);
 
 function startGame(m) {
   audio();
   mode = m; state = 'play'; paused = false;
-  score = 0; lives = 3; timeLeft = 60; elapsed = 0; spawnT = .7;
+  score = 0; lives = 3; timeLeft = 60; elapsed = 0; nextWave = .7;
   fruits = []; queue = []; combo.n = 0;
-  $('menu').classList.add('hidden'); $('over').classList.add('hidden'); $('pause').classList.add('hidden');
-  $('pauseBtn').classList.remove('hidden');
+  if (m !== 'vs') rng = Math.random;
+  for (const id of ['menu', 'over', 'pause', 'lobby', 'vsOver']) $(id).classList.add('hidden');
+  $('pauseBtn').classList.toggle('hidden', m === 'vs');
 }
 
 function endGame(reason) {
@@ -359,6 +434,7 @@ function endGame(reason) {
 
 function showOver() {
   state = 'over';
+  if (mode === 'vs') { showVsOver(); return; }
   const best = getBest(mode), isNew = score > best;
   if (isNew) setBest(mode, score);
   $('overTitle').textContent = overReason === 'bomb' ? 'Bùm! Trúng bom 💥' : overReason === 'time' ? 'Hết giờ! ⏰' : 'Hết mạng! 💔';
@@ -370,13 +446,13 @@ function showOver() {
 
 function toMenu() {
   state = 'menu'; paused = false; queue = [];
-  $('over').classList.add('hidden'); $('pause').classList.add('hidden'); $('pauseBtn').classList.add('hidden');
+  for (const id of ['over', 'pause', 'pauseBtn', 'lobby', 'vsOver']) $(id).classList.add('hidden');
   $('menu').classList.remove('hidden');
   refreshMenuBest();
 }
 
 function setPaused(p) {
-  if (state !== 'play') return;
+  if (state !== 'play' || mode === 'vs') return;
   paused = p;
   $('pause').classList.toggle('hidden', !p);
 }
@@ -512,23 +588,352 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.opacity = 0, 2400);
 }
 
+// ---------- Đối kháng online (tin nhắn đi qua MQTT broker công khai) ----------
+const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
+const MQTT_SRC = 'https://cdn.jsdelivr.net/npm/mqtt@5.15.2/dist/mqtt.min.js';
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const myId = Math.random().toString(36).slice(2, 10);
+let vsStart = 0;
+const net = {
+  client: null, session: 0, room: '', host: false, opp: null, oppName: 'Đối thủ', oppLeft: false, lastSeen: 0,
+  round: 0, played: 0, oppScore: 0, oppFinal: null, myFinal: null, resultShown: false, wins: 0, losses: 0,
+  wantRematch: false, oppRematch: false, sentScore: -1, sentT: 0, comboOut: 0, lastBeep: -1,
+  ping: 0, joinTimer: 0, startT: 0, finalT: 0,
+};
+let myName = '';
+try { myName = localStorage.getItem('ctc_name') || ''; } catch (e) {}
+if (!myName) myName = 'Người chơi ' + (100 + Math.random() * 900 | 0);
+
+// Ký tự đầu của mã phòng cho biết phòng nằm trên broker nào, để người vào phòng bằng mã cũng tìm đúng chỗ
+function makeCode(b) {
+  let c;
+  do c = CODE_CHARS[Math.random() * CODE_CHARS.length | 0]; while (CODE_CHARS.indexOf(c) % BROKERS.length !== b);
+  for (let i = 0; i < 5; i++) c += CODE_CHARS[Math.random() * CODE_CHARS.length | 0];
+  return c;
+}
+const brokerOf = code => CODE_CHARS.indexOf(code[0]) % BROKERS.length;
+const roomTopic = () => 'chemtraicay/v1/' + net.room;
+const roomLink = () => location.origin + location.pathname + '?phong=' + net.room;
+const cleanScore = v => Math.max(0, Math.min(99999, v | 0));
+
+function loadMqtt() {
+  if (window.mqtt) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = MQTT_SRC; s.onload = res; s.onerror = () => { s.remove(); rej(new Error('load')); };
+    document.head.appendChild(s);
+  });
+}
+
+function send(type, data = {}, qos = 0) {
+  if (net.client && net.client.connected)
+    net.client.publish(roomTopic(), JSON.stringify({ ...data, type, from: myId, name: myName }), { qos });
+}
+
+async function connectRoom(room, tok) {
+  await loadMqtt();
+  if (tok !== net.session) throw new Error('cancel');
+  net.room = room;
+  return new Promise((res, rej) => {
+    const c = mqtt.connect(BROKERS[brokerOf(room)], {
+      clientId: 'ctc_' + myId + '_' + (Math.random() * 1e6 | 0), connectTimeout: 8000, reconnectPeriod: 2000, keepalive: 20,
+      will: { topic: roomTopic(), payload: JSON.stringify({ type: 'leave', from: myId }), qos: 0, retain: false },
+    });
+    net.client = c;
+    let ok = false;
+    const fail = setTimeout(() => { if (!ok) { c.end(true); if (net.client === c) net.client = null; rej(new Error('timeout')); } }, 10000);
+    c.on('connect', () => c.subscribe(roomTopic(), { qos: 1 }, err => { if (!ok && !err) { ok = true; clearTimeout(fail); res(); } }));
+    c.on('message', (t, buf) => {
+      let m;
+      try { m = JSON.parse(buf.toString()); } catch (e) { return; }
+      if (m && (m.from !== myId || m.type === 'start')) onNet(m);
+    });
+  });
+}
+
+function afterConnect() {
+  clearInterval(net.ping);
+  net.ping = setInterval(() => { if (net.opp) send('ping'); }, 2000);
+}
+
+function onNet(m) {
+  const now = performance.now(), name = String(m.name || 'Đối thủ').slice(0, 14);
+  const fromOpp = !!net.opp && m.from === net.opp;
+  if (fromOpp && m.type !== 'leave') { net.lastSeen = now; net.oppLeft = false; net.oppName = name; }
+  switch (m.type) {
+    case 'join':
+      if (!net.host || (fromOpp && !net.oppLeft)) return;
+      if ((net.opp && !net.oppLeft) || state === 'play' || state === 'dying') { send('full', { to: m.from }, 1); return; }
+      if (m.from !== net.opp) net.wins = net.losses = 0;
+      net.opp = m.from; net.oppName = name; net.oppLeft = false; net.lastSeen = now;
+      lobbyStatus(`${name} đã vào phòng! Chuẩn bị...`);
+      toast(`${name} đã vào phòng!`);
+      clearTimeout(net.startT); net.startT = setTimeout(sendStart, 900);
+      return;
+    case 'start':
+      // Chủ phòng cũng chờ tin "start" của chính mình quay về từ broker, để 2 bên bắt đầu gần như cùng lúc
+      if (m.from === myId) { if (m.round > net.played) beginVs(m); return; }
+      if (net.host) return;
+      if (m.guest !== myId) {
+        if (!net.opp) { stopJoin(); lobbyStatus('Phòng này đã đủ 2 người. Hãy tạo phòng mới nhé.', true); }
+        return;
+      }
+      if (m.round <= net.played) return;
+      net.opp = m.from; net.oppName = name; net.oppLeft = false; net.lastSeen = now;
+      beginVs(m);
+      return;
+    case 'full':
+      if (m.to === myId && !net.opp) { stopJoin(); lobbyStatus('Phòng này đã đủ 2 người. Hãy tạo phòng mới nhé.', true); }
+      return;
+    case 'score':
+      if (!fromOpp || m.round !== net.played) return;
+      net.oppScore = cleanScore(m.score);
+      if (m.combo >= 3 && state === 'play') pop(`${name}: combo ${m.combo | 0}!`, W - 130 * S, 110 * S, '#6fe3ff', 22);
+      return;
+    case 'final':
+      if (!fromOpp || m.round !== net.played) return;
+      net.oppFinal = net.oppScore = cleanScore(m.score);
+      if (net.myFinal !== null) finishVs();
+      return;
+    case 'rematch':
+      if (!fromOpp) return;
+      net.oppRematch = true;
+      updateVsOverStatus();
+      if (net.host && net.wantRematch) sendStart();
+      return;
+    case 'leave':
+      if (!fromOpp || net.oppLeft) return;
+      net.oppLeft = true;
+      toast(`${net.oppName} đã rời phòng`);
+      if (net.myFinal !== null && !net.resultShown) finishVs(); else updateVsOverStatus();
+      return;
+  }
+}
+
+function sendStart() {
+  if (!net.host || !net.opp || net.oppLeft) return;
+  net.round = Math.max(net.round, net.played) + 1;
+  send('start', { seed: Math.random() * 2147483647 | 0, round: net.round, guest: net.opp }, 1);
+}
+
+function beginVs(m) {
+  stopJoin(); clearTimeout(net.finalT);
+  Object.assign(net, {
+    played: m.round, oppScore: 0, oppFinal: null, myFinal: null, resultShown: false, wantRematch: false, oppRematch: false,
+    sentScore: -1, sentT: 0, comboOut: 0, lastBeep: -1, lastSeen: performance.now(),
+  });
+  rng = mulberry32(m.seed | 0);
+  vsStart = performance.now() + 3000;
+  startGame('vs');
+}
+
+function netTick(now) {
+  const c = Math.max(0, Math.ceil((vsStart - now) / 1000));
+  if (c !== net.lastBeep && c <= 3) { net.lastBeep = c; tone(c ? 660 : 1046, c ? 650 : 1040, c ? .12 : .3, .15, 'square'); }
+  if (score !== net.sentScore && now - net.sentT > 150) {
+    send('score', { score, combo: net.comboOut, round: net.played });
+    net.sentScore = score; net.sentT = now; net.comboOut = 0;
+  }
+}
+
+function showVsOver() {
+  net.myFinal = score;
+  send('final', { score, round: net.played }, 1);
+  $('vsTitle').textContent = 'Hết giờ! ⏰';
+  $('vsMeName').textContent = myName; $('vsMe').textContent = score;
+  $('vsOppName').textContent = net.oppName; $('vsOpp').textContent = net.oppScore;
+  $('vsTally').textContent = '';
+  $('btnRematch').disabled = true; $('btnVsInvite').classList.add('hidden');
+  vsStatus(`Đang chờ kết quả của ${net.oppName}...`);
+  $('vsOver').classList.remove('hidden');
+  if (net.oppFinal !== null || net.oppLeft) finishVs();
+  else net.finalT = setTimeout(finishVs, 6000); // không nhận được kết quả cuối thì dùng điểm gần nhất
+}
+
+function finishVs() {
+  if (net.myFinal === null || net.resultShown) return;
+  clearTimeout(net.finalT);
+  net.resultShown = true;
+  const me = net.myFinal, op = net.oppFinal !== null ? net.oppFinal : net.oppScore;
+  $('vsOpp').textContent = op;
+  if (me > op) { net.wins++; $('vsTitle').textContent = 'Bạn thắng! 🏆'; sfx.combo(5); }
+  else if (me < op) { net.losses++; $('vsTitle').textContent = 'Bạn thua rồi 😢'; sfx.miss(); }
+  else $('vsTitle').textContent = 'Hòa! 🤝';
+  $('vsTally').textContent = `Tỉ số: ${myName} ${net.wins} – ${net.losses} ${net.oppName}`;
+  updateVsOverStatus();
+}
+
+function updateVsOverStatus() {
+  if (!net.resultShown) return;
+  const btn = $('btnRematch');
+  $('btnVsInvite').classList.toggle('hidden', !(net.host && net.oppLeft));
+  if (net.oppLeft) {
+    btn.disabled = true; btn.textContent = 'Đấu lại';
+    vsStatus(net.host ? `${net.oppName} đã rời phòng. Mời người khác vào là trận mới tự bắt đầu.` : `${net.oppName} đã rời phòng.`);
+    return;
+  }
+  btn.disabled = net.wantRematch;
+  btn.textContent = net.oppRematch ? 'Đồng ý đấu lại' : 'Đấu lại';
+  vsStatus(net.wantRematch ? `Đang chờ ${net.oppName} đồng ý...` : net.oppRematch ? `${net.oppName} muốn đấu lại!` : '');
+}
+
+function drawVsHud(now) {
+  const m = 16, top = 14, lost = net.oppLeft || now - net.lastSeen > 7000;
+  text(myName, m + 2, top, Math.round(15 * S), '#fff');
+  text(String(score), m, top + 20 * S, Math.round(44 * S), '#ffd23f');
+  text(lost ? `${net.oppName} (mất kết nối)` : net.oppName, W - m - 2, top, Math.round(15 * S), lost ? '#ff9a8a' : '#fff', 'right');
+  text(String(net.oppScore), W - m, top + 20 * S, Math.round(44 * S), '#6fe3ff', 'right');
+  const sec = Math.ceil(timeLeft);
+  text(String(sec), W / 2, top, Math.round(34 * S), sec <= 10 ? '#ff6a5a' : '#fff', 'center');
+  // Thanh so điểm: vàng là mình, xanh là đối thủ
+  const bw = Math.min(260, W * .34), bx = W / 2 - bw / 2, by = top + 44 * S, tot = score + net.oppScore, f = tot ? score / tot : .5;
+  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 12);
+  ctx.fillStyle = '#ffd23f'; ctx.fillRect(bx, by, bw * f, 8);
+  ctx.fillStyle = '#6fe3ff'; ctx.fillRect(bx + bw * f, by, bw * (1 - f), 8);
+  if (state !== 'play') return;
+  if (now < vsStart) {
+    text(String(Math.ceil((vsStart - now) / 1000)), W / 2, H / 2 - 80 * S, Math.round(140 * S), '#fff', 'center');
+    text(`${myName}  vs  ${net.oppName}`, W / 2, H / 2 + 80 * S, Math.round(24 * S), '#ffd23f', 'center');
+  } else if (now < vsStart + 700) {
+    text('Chém!', W / 2, H / 2 - 60 * S, Math.round(110 * S), '#ffd23f', 'center');
+  }
+}
+
+function stopJoin() { clearInterval(net.joinTimer); net.joinTimer = 0; }
+function lobbyStatus(msg, err) { const s = $('lobbyStatus'); s.textContent = msg; s.classList.toggle('err', !!err); }
+function vsStatus(msg) { $('vsStatus').textContent = msg; }
+
+function openLobby(code) {
+  $('menu').classList.add('hidden'); $('lobby').classList.remove('hidden');
+  $('lobbyHome').classList.remove('hidden'); $('lobbyRoom').classList.add('hidden');
+  $('nameIn').value = myName;
+  $('invited').classList.toggle('hidden', !code);
+  $('createRow').classList.toggle('hidden', !!code);
+  $('codeIn').value = code || '';
+}
+
+function saveName() {
+  myName = ($('nameIn').value.trim() || myName).slice(0, 14);
+  try { localStorage.setItem('ctc_name', myName); } catch (e) {}
+}
+
+function showRoom(code, host) {
+  $('lobbyHome').classList.add('hidden'); $('lobbyRoom').classList.remove('hidden');
+  $('roomCode').textContent = code || '…';
+  $('roomLink').textContent = '';
+  $('btnInvite').classList.add('hidden');
+  net.host = host;
+}
+
+async function createRoom() {
+  audio(); saveName();
+  const tok = ++net.session;
+  showRoom('', true);
+  lobbyStatus('Đang tạo phòng...');
+  for (let b = 0; b < BROKERS.length; b++) {
+    const code = makeCode(b);
+    try { await connectRoom(code, tok); } catch (e) { if (tok !== net.session) return; continue; }
+    if (tok !== net.session) return;
+    afterConnect();
+    $('roomCode').textContent = code;
+    $('roomLink').textContent = roomLink();
+    $('btnInvite').classList.remove('hidden');
+    lobbyStatus('Đang chờ đối thủ... Gửi link hoặc mã phòng cho bạn bè nhé!');
+    return;
+  }
+  lobbyStatus('Không kết nối được máy chủ đối kháng. Kiểm tra mạng rồi thử lại.', true);
+}
+
+async function joinRoom() {
+  audio(); saveName();
+  const code = $('codeIn').value.trim().toUpperCase();
+  if (!/^[A-Z0-9]{6}$/.test(code) || CODE_CHARS.indexOf(code[0]) < 0) { toast('Mã phòng gồm 6 ký tự, ví dụ: K7PX2M'); return; }
+  const tok = ++net.session;
+  showRoom(code, false);
+  lobbyStatus('Đang kết nối...');
+  try { await connectRoom(code, tok); }
+  catch (e) { if (tok === net.session) lobbyStatus('Không kết nối được máy chủ đối kháng. Kiểm tra mạng rồi thử lại.', true); return; }
+  if (tok !== net.session) return;
+  afterConnect();
+  lobbyStatus('Đang tìm chủ phòng...');
+  const t0 = performance.now();
+  send('join', {}, 1);
+  net.joinTimer = setInterval(() => {
+    if (performance.now() - t0 > 15000) {
+      stopJoin();
+      lobbyStatus('Không thấy chủ phòng — có thể phòng đã đóng. Nhờ bạn tạo phòng mới rồi gửi lại link nhé.', true);
+      return;
+    }
+    send('join', {}, 1);
+  }, 2000);
+}
+
+function leaveRoom() {
+  net.session++;
+  if (net.client) {
+    send('leave');
+    const c = net.client;
+    setTimeout(() => c.end(), 300);
+  }
+  clearInterval(net.ping); stopJoin(); clearTimeout(net.startT); clearTimeout(net.finalT);
+  Object.assign(net, { client: null, room: '', host: false, opp: null, oppLeft: false, round: 0, played: 0, wins: 0, losses: 0, resultShown: false });
+  rng = Math.random;
+  if (location.search) history.replaceState(null, '', location.pathname);
+}
+
+async function invite() {
+  const url = roomLink(), msg = `${myName} thách bạn đấu Chém Trái Cây 🍉🔪 Mã phòng ${net.room}:`;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Chém Trái Cây — Đối kháng', text: msg, url }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(msg + ' ' + url); toast('Đã copy link mời, dán gửi bạn bè nhé!'); }
+  catch (e) { toast(url); }
+}
+
+$('btnVs').onclick = () => openLobby('');
+$('btnCreate').onclick = createRoom;
+$('btnJoin').onclick = joinRoom;
+$('codeIn').addEventListener('keydown', e => { if (e.key === 'Enter') joinRoom(); });
+$('btnLobbyBack').onclick = () => { if (location.search) history.replaceState(null, '', location.pathname); toMenu(); };
+$('btnLeave').onclick = () => { leaveRoom(); toMenu(); };
+$('btnInvite').onclick = invite;
+$('btnVsInvite').onclick = invite;
+$('btnVsLeave').onclick = () => { leaveRoom(); toMenu(); };
+$('btnRematch').onclick = () => {
+  net.wantRematch = true;
+  send('rematch', {}, 1);
+  updateVsOverStatus();
+  if (net.host && net.oppRematch) sendStart();
+};
+addEventListener('pagehide', () => { if (net.client) send('leave'); });
+
+const invitedCode = new URLSearchParams(location.search).get('phong');
+if (invitedCode) openLobby(invitedCode.toUpperCase().slice(0, 6));
+
 // ---------- Vòng lặp ----------
 function update(dt, now) {
   if (state === 'play') {
-    elapsed += dt;
-    if (mode === 'arcade') { timeLeft -= dt; if (timeLeft <= 0) { timeLeft = 0; endGame('time'); } }
-    spawnT -= dt;
-    if (spawnT <= 0 && queue.length === 0) {
-      spawnWave();
-      spawnT = mode === 'arcade' ? Math.max(.55, 1.25 - elapsed * .012) : Math.max(.75, 2.1 - elapsed * .012);
+    if (mode === 'vs') {
+      // Đối kháng tính giờ theo đồng hồ thật để 2 máy kết thúc cùng lúc
+      elapsed = Math.max(0, (now - vsStart) / 1000);
+      timeLeft = Math.max(0, 60 - elapsed);
+      netTick(now);
+    } else {
+      elapsed += dt;
+      if (mode === 'arcade') timeLeft = Math.max(0, timeLeft - dt);
     }
-    for (let i = queue.length - 1; i >= 0; i--) {
-      queue[i].d -= dt;
-      if (queue[i].d <= 0) { spawnOne(queue[i].bomb); queue.splice(i, 1); }
+    while (elapsed >= nextWave) { spawnWave(nextWave); nextWave += waveGap(nextWave); }
+    for (let i = 0; i < queue.length;) {
+      const q = queue[i];
+      if (elapsed < q.d) { i++; continue; }
+      queue.splice(i, 1);
+      if (elapsed - q.d < 1.5) spawnOne(q); // tab bị ẩn lâu thì bỏ các lượt đã quá hạn, tránh dồn cả loạt
     }
+    if (mode !== 'classic' && timeLeft <= 0) endGame('time');
   } else if (state === 'menu' || state === 'over') {
     menuSpawnT -= dt;
-    if (menuSpawnT <= 0 && fruits.length < 4) { spawnOne(false); menuSpawnT = rand(.9, 1.6); }
+    if (menuSpawnT <= 0 && fruits.length < 4) { spawnOne(makeThrow(false, 0)); menuSpawnT = rand(.9, 1.6); }
   } else if (state === 'dying') {
     dieT -= dt;
     if (dieT <= 0) showOver();
@@ -567,6 +972,7 @@ function update(dt, now) {
         score += combo.n;
         pop(`Combo ${combo.n} quả! +${combo.n}`, Math.max(120 * S, Math.min(W - 120 * S, combo.x)), combo.y - 30 * S, '#7dff8a', 34);
         sfx.combo(combo.n);
+        if (mode === 'vs') { net.comboOut = combo.n; net.sentT = 0; }
       }
       combo.n = 0;
     }
@@ -648,7 +1054,8 @@ function render(now) {
   ctx.globalAlpha = 1;
   ctx.restore();
 
-  if (state === 'play' || state === 'dying') {
+  if ((state === 'play' || state === 'dying') && mode === 'vs') drawVsHud(now);
+  else if (state === 'play' || state === 'dying') {
     const m = 16, top = 14;
     text(String(score), m, top, Math.round(44 * S), '#ffd23f');
     text(`Kỷ lục: ${Math.max(getBest(mode), score)}`, m + 2, top + 50 * S, Math.round(16 * S), '#fff');
